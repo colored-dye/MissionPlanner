@@ -177,6 +177,11 @@
                 byte_array = new byte[GEC_PT_LEN];
             }
 
+            public Gec_plaintext(byte[] pt): this()
+            {
+                Array.ConstrainedCopy(pt, 0, byte_array, 0, GEC_PT_LEN);
+            }
+
             /// <summary>
             /// The print.
             /// </summary>
@@ -218,6 +223,15 @@
             public Gec_ciphertext(byte[] ct): this()
             {
                 Array.ConstrainedCopy(ct, 0, byte_array, 0, GEC_CT_LEN);
+            }
+        }
+
+        public class GEC_ciphertext_frame
+        {
+            public byte[] byte_array;
+            public GEC_ciphertext_frame()
+            {
+                byte_array = new byte[GEC_CT_FRAME_LEN];
             }
         }
 
@@ -290,6 +304,18 @@
             }
         }
 
+        public bool encrypt(int chan, byte[] pt, byte[] ct)
+        {
+            if (chan == 1)
+            {
+                return gec_encrypt(sym_key_chan1.byte_array, pt, ct) == 0;
+            }
+            else
+            {
+                return gec_encrypt(sym_key_chan2.byte_array, pt, ct) == 0;
+            }
+        }
+
         /// <summary>
         /// The decrypt.
         /// </summary>
@@ -306,6 +332,18 @@
             else
             {
                 return gec_decrypt(sym_key_chan2.byte_array, ct.byte_array, pt.byte_array) == 0;
+            }
+        }
+
+        public bool decrypt(int chan, byte[] pt, byte[] ct)
+        {
+            if (chan == 1)
+            {
+                return gec_decrypt(sym_key_chan1.byte_array, pt, ct) == 0;
+            }
+            else
+            {
+                return gec_decrypt(sym_key_chan2.byte_array, pt, ct) == 0;
             }
         }
     }

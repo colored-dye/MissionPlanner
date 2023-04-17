@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            GEC.gec_init_sym_key_conf_auth(gec.sym_key_chan1.byte_array, GEC.raw_key_1);
             GEC.gec_init_sym_key_conf_auth(gec.sym_key_chan2.byte_array, GEC.raw_key_2);
 
             this.components = new System.ComponentModel.Container();
