@@ -28,6 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
+            GEC.gec_init_sym_key_conf_auth(gec.sym_key_chan2.byte_array, GEC.raw_key_2);
+
             this.components = new System.ComponentModel.Container();
             this.CMB_comport = new System.Windows.Forms.ComboBox();
             this.cmb_baudrate = new System.Windows.Forms.ComboBox();

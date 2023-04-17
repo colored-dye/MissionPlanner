@@ -46,6 +46,7 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GEC.cs" />
     <Compile Include="simpleexample.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -85,6 +86,10 @@
     <ProjectReference Include="..\Mavlink\MAVLink.csproj">
       <Project>{20296734-5f3c-4593-a0d5-dd20b440b13a}</Project>
       <Name>MAVLink</Name>
+    </ProjectReference>
+    <ProjectReference Include="GEC_base\GEC_base.vcxproj">
+      <Project>{b9d634d2-905d-4789-9b56-4bded67a1e2d}</Project>
+      <Name>GEC_base</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

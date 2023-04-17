@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+
 namespace SimpleExample
 {
     public partial class simpleexample : Form
@@ -21,6 +22,14 @@ namespace SimpleExample
         byte sysid;
         // our target compid
         byte compid;
+
+        GEC gec = new GEC();
+        Deque.Deque<byte> receive_deque = new Deque.Deque<byte>(4096);
+        //System.Collections.Concurrent.ConcurrentQueue<byte> receive_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
+        //System.Collections.Concurrent.ConcurrentQueue<byte> plaintext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
+
+        //System.IO.MemoryStream plaintext_stream = new System.IO.MemoryStream();
+        //System.IO.MemoryStream ciphertext_stream = new System.IO.MemoryStream();
 
         public simpleexample()
         {
@@ -45,13 +54,108 @@ namespace SimpleExample
 
             // set timeout to 2 seconds
             serialPort1.ReadTimeout = 2000;
+            //serialPort1.DataReceived += DataReceived;
 
             BackgroundWorker bgw = new BackgroundWorker();
 
             bgw.DoWork += bgw_DoWork;
+            //bgw.DoWork += bgw_Decrypt;
 
             bgw.RunWorkerAsync();
         }
+
+        //void DataReceived(object sender, SerialDataReceivedEventArgs e)
+        //{
+        //    try
+        //    {
+        //        lock (readlock)
+        //        {
+        //            var serial_port = (SerialPort)sender;
+        //            var bytes_to_read = serialPort1.BytesToRead;
+        //            var buffer = new byte[bytes_to_read];
+        //            serialPort1.Read(buffer, 0, bytes_to_read);
+        //            //ciphertext_stream.Write(buffer, 0, buffer.Length);
+        //            foreach (var b in buffer)
+        //            {
+        //                receive_queue.Enqueue(b);
+        //            }
+        //        }
+        //    }
+        //    catch (TimeoutException)
+        //    {
+        //        Console.WriteLine("Timeout");
+        //    }
+        //    catch (InvalidOperationException)
+        //    {
+        //        Console.WriteLine("Invalid Operation Exception");
+        //    }
+        //}
+
+        //void bgw_Decrypt(object sender, DoWorkEventArgs e)
+        //{
+        //    while (true)
+        //    {
+        //        var ct = new GEC.Gec_ciphertext();
+        //        var pt = new GEC.Gec_plaintext();
+        //        int cnt = 0;
+        //        while (true)
+        //        {
+        //            //if (ciphertext_stream.Length > 0)
+        //            //{
+        //            //    byte c = (byte)ciphertext_stream.ReadByte();
+        //            //    if (c == 0x7e)
+        //            //    {
+        //            //        while (ciphertext_stream.Length == 0)
+        //            //        {
+
+        //            //        }
+        //            //        c = (byte)ciphertext_stream.ReadByte();
+        //            //        if (c == 0)
+        //            //        {
+        //            //            break;
+        //            //        }
+        //            //    }
+        //            ////}
+        //            byte c;
+        //            if (receive_queue.TryDequeue(out c))
+        //            {
+        //                if (c == 0x7e)
+        //                {
+        //                    while (!receive_queue.TryDequeue(out c))
+        //                    {
+        //                    }
+        //                    if (c == 0)
+        //                    {
+        //                        break;
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        while (cnt < GEC.GEC_CT_LEN)
+        //        {
+        //            //int len = ciphertext_stream.Read(ct.byte_array, cnt, GEC.GEC_CT_LEN - cnt);
+        //            //cnt += len;
+        //            byte c;
+        //            if (receive_queue.TryDequeue(out c))
+        //            {
+        //                ct.byte_array[cnt++] = c;
+        //            }
+        //        }
+        //        if (!gec.decrypt(2, ct, pt))
+        //        {
+        //            Console.WriteLine("Decrypt failed");
+        //        }
+        //        else
+        //        {
+        //            lock (readlock)
+        //            {
+        //                long position = plaintext_stream.Position;
+        //                plaintext_stream.Write(pt.byte_array, 0, pt.byte_array.Length);
+        //                plaintext_stream.Position = position;
+        //            }
+        //        }
+        //    }
+        //}
 
         void bgw_DoWork(object sender, DoWorkEventArgs e)
         {
@@ -60,56 +164,94 @@ namespace SimpleExample
                 try
                 {
                     MAVLink.MAVLinkMessage packet;
+                    var ct = new GEC.Gec_ciphertext();
+                    var pt = new GEC.Gec_plaintext();
                     lock (readlock)
                     {
-                        // read any valid packet from the port
-                        packet = mavlink.ReadPacket(serialPort1.BaseStream);
-                        
-                        // check its valid
-                        if (packet == null || packet.data == null)
-                            continue;
-                    }
-
-                    // check to see if its a hb packet from the comport
-                    if (packet.data.GetType() == typeof(MAVLink.mavlink_heartbeat_t))
-                    {
-                        var hb = (MAVLink.mavlink_heartbeat_t)packet.data;
-
-                        // save the sysid and compid of the seen MAV
-                        sysid = packet.sysid;
-                        compid = packet.compid;
-
-                        // request streams at 2 hz
-                        var buffer = mavlink.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.REQUEST_DATA_STREAM,
-                            new MAVLink.mavlink_request_data_stream_t()
+                        int cnt = 0;
+                        while (true)
+                        {
+                            int c;
+                            c = serialPort1.ReadByte();
+                            if (c != -1)
                             {
-                                req_message_rate = 2,
-                                req_stream_id = (byte)MAVLink.MAV_DATA_STREAM.ALL,
-                                start_stop = 1,
-                                target_component = compid,
-                                target_system = sysid
-                            });
-
-                        serialPort1.Write(buffer, 0, buffer.Length);
-
-                        buffer = mavlink.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.HEARTBEAT, hb);
-
-                        serialPort1.Write(buffer, 0, buffer.Length);
+                                if ((byte)c == 0x7e)
+                                {
+                                    while (true)
+                                    {
+                                        c = serialPort1.ReadByte();
+                                        if (c != -1)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                    if ((byte)c == 0)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        while (cnt < GEC.GEC_CT_LEN)
+                        {
+                            int len = serialPort1.Read(ct.byte_array, cnt, GEC.GEC_CT_LEN - cnt);
+                            cnt += len;
+                        }
+                        if (!gec.decrypt(2, ct, pt))
+                        {
+                            Console.WriteLine("Decrypt failed");
+                            continue;
+                        }
                     }
 
-                    // from here we should check the the message is addressed to us
-                    if (sysid != packet.sysid || compid != packet.compid)
-                        continue;
-
-                    Console.WriteLine(packet.msgtypename);
-                    
-                    if (packet.msgid == (byte)MAVLink.MAVLINK_MSG_ID.ATTITUDE)
-                    //or
-                    //if (packet.data.GetType() == typeof(MAVLink.mavlink_attitude_t))
+                    foreach (var b in pt.byte_array)
                     {
-                        var att = (MAVLink.mavlink_attitude_t)packet.data;
+                        receive_deque.AddToBack(b);
+                    }
 
-                        Console.WriteLine(att.pitch*57.2958 + " " + att.roll*57.2958);
+                    while (true)
+                    {
+                        try
+                        {
+                            packet = mavlink.ReadPacketFromQueue(receive_deque);
+
+                            // check its valid
+                            if (packet == null || packet.data == null)
+                            {
+                                Console.WriteLine("========Packet invalid");
+                                continue;
+                            }
+
+                            // check to see if its a hb packet from the comport
+                            if (packet.data.GetType() == typeof(MAVLink.mavlink_heartbeat_t))
+                            {
+                                Console.WriteLine("HEARTBEAT: ({0}:{1})", packet.sysid, packet.seq);
+
+                                var hb = (MAVLink.mavlink_heartbeat_t)packet.data;
+
+                                // save the sysid and compid of the seen MAV
+                                sysid = packet.sysid;
+                                compid = packet.compid;
+                            }
+
+                            // from here we should check the the message is addressed to us
+                            if (sysid != packet.sysid || compid != packet.compid)
+                                continue;
+
+                            //Console.WriteLine(packet.msgtypename);
+
+                            if (packet.msgid == (byte)MAVLink.MAVLINK_MSG_ID.ATTITUDE)
+                            //or
+                            //if (packet.data.GetType() == typeof(MAVLink.mavlink_attitude_t))
+                            {
+                                var att = (MAVLink.mavlink_attitude_t)packet.data;
+
+                                Console.WriteLine(att.pitch * 57.2958 + " " + att.roll * 57.2958);
+                            }
+                        }catch
+                        {
+                            break;
+                        }
                     }
                 }
                 catch
@@ -120,7 +262,7 @@ namespace SimpleExample
             }
         }
 
-        T readsomedata<T>(byte sysid,byte compid,int timeout = 2000)
+        T readsomedata<T>(byte sysid, byte compid, int timeout = 2000)
         {
             DateTime deadline = DateTime.Now.AddMilliseconds(timeout);
 
@@ -137,9 +279,9 @@ namespace SimpleExample
 
                     Console.WriteLine(packet);
 
-                    if (packet.data.GetType() == typeof (T))
+                    if (packet.data.GetType() == typeof(T))
                     {
-                        return (T) packet.data;
+                        return (T)packet.data;
                     }
                 }
             }
@@ -174,13 +316,13 @@ namespace SimpleExample
             try
             {
                 var ack = readsomedata<MAVLink.mavlink_command_ack_t>(sysid, compid);
-                if (ack.result == (byte)MAVLink.MAV_RESULT.ACCEPTED) 
+                if (ack.result == (byte)MAVLink.MAV_RESULT.ACCEPTED)
                 {
 
                 }
             }
-            catch 
-            { 
+            catch
+            {
             }
         }
 
@@ -218,10 +360,10 @@ namespace SimpleExample
 
                 req2.frame = (byte)MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT;
 
-                req2.y = (int) (115 * 1.0e7);
-                req2.x = (int) (-35 * 1.0e7);
+                req2.y = (int)(115 * 1.0e7);
+                req2.x = (int)(-35 * 1.0e7);
 
-                req2.z = (float) (2.34);
+                req2.z = (float)(2.34);
 
                 req2.param1 = 0;
                 req2.param2 = 0;
@@ -237,7 +379,7 @@ namespace SimpleExample
                     serialPort1.Write(packet, 0, packet.Length);
 
                     var ack2 = readsomedata<MAVLink.mavlink_mission_ack_t>(sysid, compid);
-                    if ((MAVLink.MAV_MISSION_RESULT) ack2.type != MAVLink.MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED)
+                    if ((MAVLink.MAV_MISSION_RESULT)ack2.type != MAVLink.MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED)
                     {
 
                     }

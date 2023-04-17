@@ -119,10 +119,121 @@ public partial class MAVLink
 
                 if (DateTime.Now > to)
                 {
-                    throw new TimeoutException("Timeout waiting for data");
+                    //throw new TimeoutException("Timeout waiting for data");
                 }
                 System.Threading.Thread.Sleep(1);
             }
+        }
+
+        public static void ReadBytesFromQueue(Deque.Deque<byte> queue, byte[] buffer, int offset, int count)
+        {
+            if (queue.Count < count)
+                throw new EndOfStreamException("End of data");
+
+            int toread = count;
+            int pos = offset;
+
+            for (int i=0; i<toread; i++)
+            {
+                buffer[pos++] = queue.RemoveFromFront();
+            }
+        }
+
+        public MAVLinkMessage ReadPacketFromQueue(Deque.Deque<byte> queue)
+        {
+            byte[] buffer = new byte[MAVLink.MAVLINK_MAX_PACKET_LEN];
+            DateTime packettime = DateTime.MinValue;
+
+            int readcount = 0;
+
+            while (readcount <= MAVLink.MAVLINK_MAX_PACKET_LEN)
+            {
+                // read STX byte
+                ReadBytesFromQueue(queue, buffer, 0, 1);
+
+                if (buffer[0] == MAVLink.MAVLINK_STX || buffer[0] == MAVLINK_STX_MAVLINK1)
+                    break;
+
+                readcount++;
+            }
+
+            if (readcount >= MAVLink.MAVLINK_MAX_PACKET_LEN)
+            {
+                return null;
+                throw new InvalidDataException("No header found in data");
+            }
+
+            var headerlength = buffer[0] == MAVLINK_STX ? MAVLINK_CORE_HEADER_LEN : MAVLINK_CORE_HEADER_MAVLINK1_LEN;
+            var headerlengthstx = headerlength + 1;
+
+            // read header
+            try
+            {
+                ReadBytesFromQueue(queue, buffer, 1, headerlength);
+            }
+            catch (EndOfStreamException)
+            {
+                queue.AddToFront(buffer[0]);
+
+                //return null;
+                throw new EndOfStreamException("End of data");
+            }
+
+            // packet length
+            int lengthtoread = 0;
+            if (buffer[0] == MAVLINK_STX)
+            {
+                lengthtoread = buffer[1] + headerlengthstx + 2 - 2; // data + header + checksum - magic - length
+                if ((buffer[2] & MAVLINK_IFLAG_SIGNED) > 0)
+                {
+                    lengthtoread += MAVLINK_SIGNATURE_BLOCK_LEN;
+                }
+            }
+            else
+            {
+                lengthtoread = buffer[1] + headerlengthstx + 2 - 2; // data + header + checksum - U - length    
+            }
+
+            try
+            {
+                //read rest of packet
+                ReadBytesFromQueue(queue, buffer, headerlengthstx, lengthtoread - (headerlengthstx - 2));
+            }
+            catch (EndOfStreamException)
+            {
+                for (int i = headerlength + 1 - 1; i >= 0; i--)
+                {
+                    queue.AddToFront(buffer[i]);
+                }
+
+                //return null;
+                throw new EndOfStreamException("End of data");
+            }
+
+            // resize the packet to the correct length
+            Array.Resize<byte>(ref buffer, lengthtoread + 2);
+
+            MAVLinkMessage message = new MAVLinkMessage(buffer, packettime);
+
+            // calc crc
+            ushort crc = MavlinkCRC.crc_calculate(buffer, buffer.Length - 2);
+
+            // calc extra bit of crc for mavlink 1.0+
+            if (message.header == MAVLINK_STX || message.header == MAVLINK_STX_MAVLINK1)
+            {
+                crc = MavlinkCRC.crc_accumulate(MAVLINK_MESSAGE_INFOS.GetMessageInfo(message.msgid).crc, crc);
+            }
+
+            // check crc
+            if ((message.crc16 >> 8) != (crc >> 8) ||
+                      (message.crc16 & 0xff) != (crc & 0xff))
+            {
+                badCRC++;
+                // crc fail
+                return null;
+            }
+
+            return message;
         }
 
         public MAVLinkMessage ReadPacket(Stream BaseStream)

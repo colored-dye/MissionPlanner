@@ -1,0 +1,10 @@
+﻿  gec-ke.c
+D:\Code\MissionPlanner - 副本\ExtLibs\SimpleExample\GEC_base\GEC\src\gec-ke.c(100,70): warning C4244: “函数”: 从“unsigned __int64”转换到“const size_t”，可能丢失数据
+D:\Code\MissionPlanner - 副本\ExtLibs\SimpleExample\GEC_base\GEC\src\gec-ke.c(166,13): warning C4101: “concatKeysSig”: 未引用的局部变量
+D:\Code\MissionPlanner - 副本\ExtLibs\SimpleExample\GEC_base\GEC\src\gec-ke.c(226,21): warning C4101: “concatKeysSig”: 未引用的局部变量
+  gec.c
+D:\Code\MissionPlanner - 副本\ExtLibs\SimpleExample\GEC_base\GEC\src\gec.c(123,32): warning C4244: “函数”: 从“uint64_t”转换到“uint32_t”，可能丢失数据
+D:\Code\MissionPlanner - 副本\ExtLibs\SimpleExample\GEC_base\GEC\src\gec.c(124,46): warning C4244: “函数”: 从“uint64_t”转换到“uint32_t”，可能丢失数据
+D:\Code\MissionPlanner - 副本\ExtLibs\SimpleExample\GEC_base\GEC\src\gec.c(186,37): warning C4244: “函数”: 从“uint64_t”转换到“uint32_t”，可能丢失数据
+  正在生成代码...
+  GEC_base.vcxproj -> D:\Code\MissionPlanner - 副本\ExtLibs\SimpleExample\Debug\GEC_base.dll
