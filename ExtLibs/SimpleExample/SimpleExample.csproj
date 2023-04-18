@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GEC.cs" />
+    <Compile Include="MyStream.cs" />
     <Compile Include="simpleexample.cs">
       <SubType>Form</SubType>
     </Compile>

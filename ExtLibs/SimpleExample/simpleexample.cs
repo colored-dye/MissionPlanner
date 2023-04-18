@@ -26,6 +26,7 @@ namespace SimpleExample
         GEC gec = new GEC();
         Deque.Deque<byte> receive_deque = new Deque.Deque<byte>(4096);
         Deque.Deque<byte> send_queue = new Deque.Deque<byte>(4096);
+        MyStream plaintextStream = new MyStream();
         //System.Collections.Concurrent.ConcurrentQueue<byte> receive_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
         //System.Collections.Concurrent.ConcurrentQueue<byte> plaintext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
 
@@ -60,9 +61,12 @@ namespace SimpleExample
             BackgroundWorker bgw = new BackgroundWorker();
 
             bgw.DoWork += bgw_DoWork;
-            //bgw.DoWork += bgw_Decrypt;
 
             bgw.RunWorkerAsync();
+
+            //BackgroundWorker decrypt = new BackgroundWorker();
+            //decrypt.DoWork += bgw_Decrypt;
+            //decrypt.RunWorkerAsync();
         }
 
         //void DataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -92,71 +96,77 @@ namespace SimpleExample
         //    }
         //}
 
-        //void bgw_Decrypt(object sender, DoWorkEventArgs e)
-        //{
-        //    while (true)
-        //    {
-        //        var ct = new GEC.Gec_ciphertext();
-        //        var pt = new GEC.Gec_plaintext();
-        //        int cnt = 0;
-        //        while (true)
-        //        {
-        //            //if (ciphertext_stream.Length > 0)
-        //            //{
-        //            //    byte c = (byte)ciphertext_stream.ReadByte();
-        //            //    if (c == 0x7e)
-        //            //    {
-        //            //        while (ciphertext_stream.Length == 0)
-        //            //        {
+        void bgw_Decrypt(object sender, DoWorkEventArgs e)
+        {
+            while (true)
+            {
+                var ct = new GEC.Gec_ciphertext();
+                var pt = new GEC.Gec_plaintext();
+                lock (readlock)
+                {
+                    int cnt = 0;
+                    while (true)
+                    {
+                        try
+                        {
+                            int c;
+                            c = serialPort1.ReadByte();
+                            if (c != -1)
+                            {
+                                if ((byte)c == 0x7e)
+                                {
+                                    while (true)
+                                    {
+                                        c = serialPort1.ReadByte();
+                                        if (c != -1)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                    if ((byte)c == 0)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        catch (TimeoutException)
+                        {
+                            Console.WriteLine("Timeout exception");
+                        }
+                        catch (System.IO.IOException)
+                        {
+                            Console.WriteLine("IOException");
+                            break;
+                        }
+                    }
+                    while (cnt < GEC.GEC_CT_LEN)
+                    {
+                        try
+                        {
+                            int len = serialPort1.Read(ct.byte_array, cnt, GEC.GEC_CT_LEN - cnt);
+                            cnt += len;
+                        }
+                        catch (TimeoutException)
+                        {
+                            Console.WriteLine("Timeout exception");
+                        }
+                        catch (System.IO.IOException)
+                        {
+                            Console.WriteLine("IOException");
+                            break;
+                        }
+                    }
+                }
+                if (!gec.decrypt(2, ct, pt))
+                {
+                    Console.WriteLine("Decrypt failed");
+                    continue;
+                }
 
-        //            //        }
-        //            //        c = (byte)ciphertext_stream.ReadByte();
-        //            //        if (c == 0)
-        //            //        {
-        //            //            break;
-        //            //        }
-        //            //    }
-        //            ////}
-        //            byte c;
-        //            if (receive_queue.TryDequeue(out c))
-        //            {
-        //                if (c == 0x7e)
-        //                {
-        //                    while (!receive_queue.TryDequeue(out c))
-        //                    {
-        //                    }
-        //                    if (c == 0)
-        //                    {
-        //                        break;
-        //                    }
-        //                }
-        //            }
-        //        }
-        //        while (cnt < GEC.GEC_CT_LEN)
-        //        {
-        //            //int len = ciphertext_stream.Read(ct.byte_array, cnt, GEC.GEC_CT_LEN - cnt);
-        //            //cnt += len;
-        //            byte c;
-        //            if (receive_queue.TryDequeue(out c))
-        //            {
-        //                ct.byte_array[cnt++] = c;
-        //            }
-        //        }
-        //        if (!gec.decrypt(2, ct, pt))
-        //        {
-        //            Console.WriteLine("Decrypt failed");
-        //        }
-        //        else
-        //        {
-        //            lock (readlock)
-        //            {
-        //                long position = plaintext_stream.Position;
-        //                plaintext_stream.Write(pt.byte_array, 0, pt.byte_array.Length);
-        //                plaintext_stream.Position = position;
-        //            }
-        //        }
-        //    }
-        //}
+                plaintextStream.Write(pt.byte_array, 0, pt.byte_array.Length);
+            }
+        }
 
         bool DecryptToReceiveQueue()
         {
@@ -290,6 +300,7 @@ namespace SimpleExample
                     {
                         MAVLink.MAVLinkMessage packet;
                         packet = mavlink.ReadPacketFromQueue(receive_deque);
+                        //packet = mavlink.ReadPacket(plaintextStream);
 
                         // check its valid
                         if (packet == null || packet.data == null)

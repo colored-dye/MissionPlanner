@@ -41,6 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GEC\GEC.csproj" />
     <ProjectReference Include="..\Interfaces\Interfaces.csproj" />
   </ItemGroup>
 

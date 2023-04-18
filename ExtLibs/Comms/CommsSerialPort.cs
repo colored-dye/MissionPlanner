@@ -62,9 +62,24 @@ namespace MissionPlanner.Comms
             }
         }
 
-        public int BytesToRead => _baseport.BytesToRead;
+        //public int BytesToRead => _baseport.BytesToRead;
+        public int BytesToRead
+        {
+            get
+            {
+                //WaitDecryptedData(GEC.GEC.GEC_PT_LEN);
+                return plaintext_queue.Count;
+            }
+        }
 
-        public int BytesToWrite => _baseport.BytesToWrite;
+        //public int BytesToWrite => _baseport.BytesToWrite;
+        public int BytesToWrite
+        {
+            get
+            {
+                return ciphertext_queue.Count;
+            }
+        }
 
         public int DataBits
         {
@@ -136,6 +151,15 @@ namespace MissionPlanner.Comms
         public void Close()
         {
             _baseport.Close();
+            while (plaintext_queue.TryDequeue(out _))
+            {
+
+            }
+            while (ciphertext_queue.TryDequeue(out _))
+            {
+
+            }
+            bgw.CancelAsync();
         }
 
         public void DiscardInBuffer()
@@ -146,16 +170,108 @@ namespace MissionPlanner.Comms
         public void Open()
         {
             _baseport.Open();
+            bgw = new System.ComponentModel.BackgroundWorker();
+            bgw.DoWork += DoWork;
+            bgw.RunWorkerAsync();
+        }
+
+        GEC.GEC gec = new GEC.GEC();
+        System.Collections.Concurrent.ConcurrentQueue<byte> plaintext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
+        System.Collections.Concurrent.ConcurrentQueue<byte> ciphertext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
+
+        System.ComponentModel.BackgroundWorker bgw;
+
+        void DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        {
+            while (IsOpen)
+            {
+                WaitDecryptedData(32);
+            }
+        }
+
+        void WaitDecryptedData(int count)
+        {
+            // Wait until `count` bytes of data are available
+            while (plaintext_queue.Count < count)
+            {
+                var ct = new GEC.GEC.Gec_ciphertext();
+                var pt = new GEC.GEC.Gec_plaintext();
+
+                while (true)
+                {
+                    int c = _baseport.ReadByte();
+                    if ((byte)c == GEC.GEC.GEC_CT_FRAME_MAGIC)
+                    {
+                        do
+                        {
+                            c = _baseport.ReadByte();
+                        } while (c == -1);
+
+                        if ((byte)c == GEC.GEC.GEC_CT_FRAME_TAG)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                int cnt = 0;
+                while (cnt < GEC.GEC.GEC_CT_LEN)
+                {
+                    int len = _baseport.Read(ct.byte_array, cnt, GEC.GEC.GEC_CT_LEN - cnt);
+                    cnt += len;
+                }
+
+                if (gec.decrypt(2, ct, pt) != GEC.GEC.GEC_RET.GEC_SUCCESS)
+                {
+                    Console.WriteLine("Decrypt failed");
+                    continue;
+                }
+
+                foreach (var b in pt.byte_array)
+                {
+                    plaintext_queue.Enqueue(b);
+                }
+            }
         }
 
         public int Read(byte[] buffer, int offset, int count)
         {
-            return _baseport.Read(buffer, offset, count);
+            //return _baseport.Read(buffer, offset, count);
+
+            if (buffer == null)
+            {
+                return 0;
+            }
+
+            int local_count = 0;
+            //WaitDecryptedData(count);
+            for (int i=0; i<count; )
+            {
+                if (plaintext_queue.TryDequeue(out buffer[offset + i]))
+                {
+                    i++;
+                    local_count++;
+                } else
+                {
+                    break;
+                }
+            }
+
+            return local_count;
         }
 
         public int ReadByte()
         {
-            return _baseport.ReadByte();
+            //return _baseport.ReadByte();
+
+            //WaitDecryptedData(1);
+            if (plaintext_queue.TryDequeue(out byte b))
+            {
+                return (int)b;
+            } else
+            {
+                return -1;
+            }
         }
 
         public int ReadChar()
@@ -180,7 +296,41 @@ namespace MissionPlanner.Comms
 
         public void Write(byte[] buffer, int offset, int count)
         {
-            _baseport.Write(buffer, offset, count);
+            //_baseport.Write(buffer, offset, count);
+
+            for (int i=0; i<count; i++)
+            {
+                ciphertext_queue.Enqueue(buffer[offset + i]);
+            }
+
+            int loop = ciphertext_queue.Count / GEC.GEC.GEC_PT_LEN;
+            int rest = ciphertext_queue.Count % GEC.GEC.GEC_PT_LEN;
+
+            var ct_frame = new GEC.GEC.GEC_ciphertext_frame();
+            ct_frame.byte_array[0] = GEC.GEC.GEC_CT_FRAME_MAGIC;
+            ct_frame.byte_array[1] = GEC.GEC.GEC_CT_FRAME_TAG;
+            var pt = new GEC.GEC.Gec_plaintext();
+            var ct = new GEC.GEC.Gec_ciphertext();
+
+            for (int i=0; i < loop; i++)
+            {
+                for (int j=0; j < GEC.GEC.GEC_PT_LEN; )
+                {
+                    if (ciphertext_queue.TryDequeue(out pt.byte_array[j])) {
+                        j++;
+                    }
+                }
+
+                if (gec.encrypt(1, pt, ct) != GEC.GEC.GEC_RET.GEC_SUCCESS)
+                {
+                    Console.WriteLine("Encrypt failed");
+                    continue;
+                }
+
+                Array.ConstrainedCopy(ct.byte_array, 0, ct_frame.byte_array, 2, GEC.GEC.GEC_CT_LEN);
+
+                _baseport.Write(ct_frame.byte_array, 0, ct_frame.byte_array.Length);
+            }
         }
 
         public void WriteLine(string text)

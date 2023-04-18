@@ -407,6 +407,10 @@ namespace MissionPlanner
 
         public static ISpeech Speech;
 
+        //public Deque.Deque<byte> plaintext_queue = new Deque.Deque<byte>();
+        //GEC.GEC gec = new GEC.GEC();
+        //System.IO.MemoryStream plaintextStream;
+
         ~MAVLinkInterface()
         {
             this.Dispose();
@@ -569,6 +573,8 @@ namespace MissionPlanner
             catch
             {
             }
+
+            //plaintext_queue.Clear();
         }
 
         public delegate IProgressReporterDialogue ProgressEventHandle(string title);
@@ -4560,6 +4566,103 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
             return readPacketAsync().AwaitSync();
         }
 
+        //void bgw_Decrypt(object sender, System.ComponentModel.DoWorkEventArgs e)
+        //{
+        //    while (BaseStream.IsOpen)
+        //    {
+        //        DecryptToReceiveQueue();
+        //    }
+        //}
+
+        //bool DecryptToReceiveQueue()
+        //{
+        //    var ct = new GEC.GEC.Gec_ciphertext();
+        //    var pt = new GEC.GEC.Gec_plaintext();
+
+        //    int cnt = 0;
+
+        //    while (true)
+        //    {
+        //        try
+        //        {
+        //            int c = BaseStream.ReadByte();
+        //            if (c != -1 && (byte)c == GEC.GEC.GEC_CT_FRAME_MAGIC)
+        //            {
+        //                do
+        //                {
+        //                    c = BaseStream.ReadByte();
+        //                } while (c == -1);
+        //                if ((byte)c == GEC.GEC.GEC_CT_FRAME_TAG)
+        //                {
+        //                    break;
+        //                }
+        //            }
+        //        }
+        //        catch (TimeoutException)
+        //        {
+        //            if (debug)
+        //            {
+        //                Console.WriteLine("DecryptToReceiveQueue: TimeoutException");
+        //            }
+        //        }
+        //        catch (System.IO.IOException)
+        //        {
+        //            if (debug)
+        //            {
+        //                Console.WriteLine("DecryptToReceiveQueue: IOException");
+        //            }
+        //            return true;
+        //        }
+        //    }
+
+        //    while (cnt < GEC.GEC.GEC_CT_LEN)
+        //    {
+        //        try
+        //        {
+        //            int len = BaseStream.Read(ct.byte_array, cnt, GEC.GEC.GEC_CT_LEN - cnt);
+        //            cnt += len;
+        //        }
+        //        catch (TimeoutException)
+        //        {
+        //            if (debug)
+        //                Console.WriteLine("DecryptToReceiveQueue: TimeoutException");
+        //        }
+        //        catch (System.IO.IOException)
+        //        {
+        //            if (debug)
+        //                Console.WriteLine("DecryptToReceiveQueue: IOException");
+        //            return true;
+        //        }
+        //    }
+
+        //    if (!gec.decrypt(2, ct, pt))
+        //    {
+        //        if (debug)
+        //        {
+        //            Console.WriteLine("Decrypt failed");
+        //        }
+        //        return true;
+        //    }
+
+        //    Console.WriteLine("===========================");
+        //    for (int i=0; i<pt.byte_array.Length; i++)
+        //    {
+        //        Console.Write("{0:D03} ", pt.byte_array[i]);
+        //    }
+        //    Console.WriteLine("\n===========================");
+
+        //    foreach (var b in pt.byte_array)
+        //    {
+        //        plaintext_queue.AddToBack(b);
+        //    }
+
+        //    //var pos = plaintextStream.Position;
+        //    //plaintextStream.Write(pt.byte_array, 0, pt.byte_array.Length);
+        //    //plaintextStream.Seek(pos, SeekOrigin.Begin);
+
+        //    return false;
+        //}
+
         public async Task<MAVLinkMessage> readPacketAsync()
         {
             byte[] buffer = new byte[MAVLINK_MAX_PACKET_LEN + 25];
@@ -4582,7 +4685,16 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                 Console.WriteLine(DateTime.Now.Millisecond + " SR0 " + BaseStream?.BytesToRead);
 
             await readlock.WaitAsync().ConfigureAwait(false);
-            
+
+            //System.ComponentModel.BackgroundWorker bgw= new System.ComponentModel.BackgroundWorker();
+            //bgw.DoWork += bgw_Decrypt;
+            //bgw.RunWorkerAsync();
+
+            //while (DecryptToReceiveQueue())
+            //{
+
+            //}
+
             try
             {
                 if (debug)
@@ -4609,9 +4721,10 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                         }
                         else
                         {
-                            if (BaseStream.ReadTimeout != 1200)
-                                BaseStream.ReadTimeout =
-                                    1200; // 1200 ms between chars - the gps detection requires this.
+                            //if (BaseStream.ReadTimeout != 1200)
+                            //    BaseStream.ReadTimeout =
+                            //        1200; // 1200 ms between chars - the gps detection requires this.
+                            BaseStream.ReadTimeout = 2200;
 
                             // time updated for internal reference
                             MAV.cs.datetime = DateTime.Now;
@@ -4639,11 +4752,30 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                                                           BaseStream?.BytesToRead);
                                 }
 
+                                //while (BaseStream.IsOpen && plaintext_queue.Count <= 0)
+                                //{
+                                //    if (DateTime.Now > to)
+                                //    {
+                                //        log.InfoFormat("MAVLINK: 1 wait time out btr {0} len {1}",
+                                //            BaseStream?.BytesToRead,
+                                //            length);
+                                //        throw new TimeoutException("Timeout");
+                                //    }
+
+                                //    await Task.Delay(1).ConfigureAwait(false);
+                                //    if (debug)
+                                //        Console.WriteLine(DateTime.Now.Millisecond + " SR0b " +
+                                //                          BaseStream?.BytesToRead);
+                                //}
+
                                 if (debug)
                                     Console.WriteLine(DateTime.Now.Millisecond + " SR1a " + BaseStream?.BytesToRead);
                                 if (BaseStream.IsOpen)
                                 {
                                     BaseStream.Read(buffer, count, 1);
+
+                                    //buffer[count] = plaintext_queue.RemoveFromFront();
+
                                     if (rawlogfile != null && rawlogfile.CanWrite)
                                         rawlogfile.WriteByte(buffer[count]);
                                 }
@@ -4696,6 +4828,11 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                     if (debug)
                         Console.WriteLine(DateTime.Now.Millisecond + " SR2 " + BaseStream?.BytesToRead);
 
+                    //if (debug)
+                    //{
+                    //    Console.WriteLine(DateTime.Now.Millisecond + " SR2 " + plaintext_queue.Count);
+                    //}
+
                     // check for a header
                     if (buffer[0] == MAVLINK_STX_MAVLINK1 || buffer[0] == MAVLINK_STX || buffer[0] == 'U')
                     {
@@ -4721,15 +4858,47 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                                 await Task.Delay(1).ConfigureAwait(false);
                             }
 
+                            //while (plaintext_queue.Count < headerlength - count)
+                            //{
+                            //    if (DateTime.Now > to)
+                            //    {
+                            //        log.InfoFormat("MAVLINK: 2 wait time out btr {0} len {1}", BaseStream.BytesToRead,
+                            //            length);
+                            //        throw new TimeoutException("Timeout");
+                            //    }
+
+                            //    await Task.Delay(1).ConfigureAwait(false);
+                            //}
+
                             if (debug)
                                 Console.WriteLine(DateTime.Now.Millisecond + " SR2a " + BaseStream?.BytesToRead);
+
+                            //if (debug)
+                            //{
+                            //    Console.WriteLine(DateTime.Now.Millisecond + " SR2a " + plaintext_queue.Count);
+                            //}
+
                             var start1 = DateTime.Now;
                             int read = BaseStream.Read(buffer, count + 1, headerlength - count);
+
+                            //int read = 0;
+                            //for (int i=0; i<headerlength - count; i++)
+                            //{
+                            //    buffer[count + 1 + i] = plaintext_queue.RemoveFromFront();
+                            //    read++;
+                            //}
+
                             var end = DateTime.Now - start1;
                             var lapse = end.TotalMilliseconds;
                             //Console.WriteLine("read: " + lapse);
                             if (debug)
                                 Console.WriteLine(DateTime.Now.Millisecond + " SR2b " + BaseStream?.BytesToRead);
+
+                            //if (debug)
+                            //{
+                            //    Console.WriteLine(DateTime.Now.Millisecond + " SR2b " + plaintext_queue.Count);
+                            //}
+
                             if (rawlogfile != null && rawlogfile.CanWrite)
                                 rawlogfile.Write(buffer, count + 1, read);
                             count += read;
@@ -4754,6 +4923,9 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                         if (debug)
                             Console.WriteLine(DateTime.Now.Millisecond + " SR3 " + BaseStream?.BytesToRead);
 
+                        //if (debug)
+                        //    Console.WriteLine(DateTime.Now.Millisecond + " SR3 " + plaintext_queue.Count);
+
                         if (count >= headerlength || logreadmode)
                         {
                             try
@@ -4777,10 +4949,30 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                                         await Task.Delay(1).ConfigureAwait(false);
                                     }
 
+                                    //while (BaseStream.IsOpen && plaintext_queue.Count < (length - headerlengthstx))
+                                    //{
+                                    //    if (DateTime.Now > to)
+                                    //    {
+                                    //        log.InfoFormat("MAVLINK: 3 wait time out btr {0} len {1}",
+                                    //            plaintext_queue.Count, length);
+                                    //        break;
+                                    //    }
+
+                                    //    await Task.Delay(1).ConfigureAwait(false);
+                                    //}
+
                                     if (BaseStream.IsOpen)
                                     {
                                         var start1 = DateTime.Now;
                                         int read = BaseStream.Read(buffer, headerlengthstx, length - (headerlengthstx));
+
+                                        //int read = 0;
+                                        //for (int i = 0; i < length - (headerlengthstx); i++)
+                                        //{
+                                        //    buffer[headerlengthstx + 1 + i] = plaintext_queue.RemoveFromFront();
+                                        //    read++;
+                                        //}
+
                                         var end = DateTime.Now - start1;
                                         var lapse = end.TotalMilliseconds;
                                         //Console.WriteLine("read: " + lapse);
@@ -4829,6 +5021,8 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                     if (BaseStream != null && BaseStream.IsOpen)
                     {
                         btr = BaseStream.BytesToRead;
+
+                        //btr = plaintext_queue.Count;
                     }
                     else if (logreadmode)
                     {

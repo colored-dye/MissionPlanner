@@ -1702,6 +1702,7 @@ namespace MissionPlanner
                 // reset connect time - for timeout functions
                 connecttime = DateTime.Now;
 
+                //comPort.debug = true;
                 // do the connect
                 comPort.Open(false, skipconnectcheck, showui);
 
