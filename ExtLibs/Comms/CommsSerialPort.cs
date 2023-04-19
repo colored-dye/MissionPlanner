@@ -185,7 +185,7 @@ namespace MissionPlanner.Comms
         {
             while (IsOpen)
             {
-                WaitDecryptedData(32);
+                WaitDecryptedData(GEC.GEC.GEC_PT_LEN);
             }
         }
 
@@ -251,10 +251,11 @@ namespace MissionPlanner.Comms
                 {
                     i++;
                     local_count++;
-                } else
-                {
-                    break;
                 }
+                //else
+                //{
+                //    break;
+                //}
             }
 
             return local_count;
@@ -265,13 +266,13 @@ namespace MissionPlanner.Comms
             //return _baseport.ReadByte();
 
             //WaitDecryptedData(1);
-            if (plaintext_queue.TryDequeue(out byte b))
+            byte b;
+            while (!plaintext_queue.TryDequeue(out b))
             {
-                return (int)b;
-            } else
-            {
-                return -1;
+
             }
+
+            return (int)b;
         }
 
         public int ReadChar()

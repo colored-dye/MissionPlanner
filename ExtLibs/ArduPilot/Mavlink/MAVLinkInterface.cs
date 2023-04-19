@@ -4724,7 +4724,7 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                             //if (BaseStream.ReadTimeout != 1200)
                             //    BaseStream.ReadTimeout =
                             //        1200; // 1200 ms between chars - the gps detection requires this.
-                            BaseStream.ReadTimeout = 2200;
+                            BaseStream.ReadTimeout = 4000;
 
                             // time updated for internal reference
                             MAV.cs.datetime = DateTime.Now;
@@ -4736,23 +4736,7 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                                 if (debug)
                                     Console.WriteLine(DateTime.Now.Millisecond + " SR1a " + BaseStream?.BytesToRead);
 
-                                while (BaseStream.IsOpen && BaseStream.BytesToRead <= 0)
-                                {
-                                    if (DateTime.Now > to)
-                                    {
-                                        log.InfoFormat("MAVLINK: 1 wait time out btr {0} len {1}",
-                                            BaseStream?.BytesToRead,
-                                            length);
-                                        throw new TimeoutException("Timeout");
-                                    }
-
-                                    await Task.Delay(1).ConfigureAwait(false);
-                                    if (debug)
-                                        Console.WriteLine(DateTime.Now.Millisecond + " SR0b " +
-                                                          BaseStream?.BytesToRead);
-                                }
-
-                                //while (BaseStream.IsOpen && plaintext_queue.Count <= 0)
+                                //while (BaseStream.IsOpen && BaseStream.BytesToRead <= 0)
                                 //{
                                 //    if (DateTime.Now > to)
                                 //    {
@@ -4767,6 +4751,14 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                                 //        Console.WriteLine(DateTime.Now.Millisecond + " SR0b " +
                                 //                          BaseStream?.BytesToRead);
                                 //}
+
+                                if (DateTime.Now > to)
+                                {
+                                    log.InfoFormat("MAVLINK: 1 wait time out btr {0} len {1}",
+                                        BaseStream?.BytesToRead,
+                                        length);
+                                    throw new TimeoutException("Timeout");
+                                }
 
                                 if (debug)
                                     Console.WriteLine(DateTime.Now.Millisecond + " SR1a " + BaseStream?.BytesToRead);
@@ -4846,19 +4838,7 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                         {
                             DateTime to = DateTime.Now.AddMilliseconds(BaseStream.ReadTimeout);
 
-                            while (BaseStream.IsOpen && BaseStream.BytesToRead < headerlength - count)
-                            {
-                                if (DateTime.Now > to)
-                                {
-                                    log.InfoFormat("MAVLINK: 2 wait time out btr {0} len {1}", BaseStream.BytesToRead,
-                                        length);
-                                    throw new TimeoutException("Timeout");
-                                }
-
-                                await Task.Delay(1).ConfigureAwait(false);
-                            }
-
-                            //while (plaintext_queue.Count < headerlength - count)
+                            //while (BaseStream.IsOpen && BaseStream.BytesToRead < headerlength - count)
                             //{
                             //    if (DateTime.Now > to)
                             //    {
@@ -4869,6 +4849,13 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
 
                             //    await Task.Delay(1).ConfigureAwait(false);
                             //}
+
+                            if (DateTime.Now > to)
+                            {
+                                log.InfoFormat("MAVLINK: 2 wait time out btr {0} len {1}", BaseStream.BytesToRead,
+                                    length);
+                                throw new TimeoutException("Timeout");
+                            }
 
                             if (debug)
                                 Console.WriteLine(DateTime.Now.Millisecond + " SR2a " + BaseStream?.BytesToRead);
@@ -4937,29 +4924,24 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                                 {
                                     DateTime to = DateTime.Now.AddMilliseconds(BaseStream.ReadTimeout);
 
-                                    while (BaseStream.IsOpen && BaseStream.BytesToRead < (length - (headerlengthstx)))
-                                    {
-                                        if (DateTime.Now > to)
-                                        {
-                                            log.InfoFormat("MAVLINK: 3 wait time out btr {0} len {1}",
-                                                BaseStream.BytesToRead, length);
-                                            break;
-                                        }
-
-                                        await Task.Delay(1).ConfigureAwait(false);
-                                    }
-
-                                    //while (BaseStream.IsOpen && plaintext_queue.Count < (length - headerlengthstx))
+                                    //while (BaseStream.IsOpen && BaseStream.BytesToRead < (length - (headerlengthstx)))
                                     //{
                                     //    if (DateTime.Now > to)
                                     //    {
                                     //        log.InfoFormat("MAVLINK: 3 wait time out btr {0} len {1}",
-                                    //            plaintext_queue.Count, length);
+                                    //            BaseStream.BytesToRead, length);
                                     //        break;
                                     //    }
 
                                     //    await Task.Delay(1).ConfigureAwait(false);
                                     //}
+
+                                    if (DateTime.Now > to)
+                                    {
+                                        log.InfoFormat("MAVLINK: 3 wait time out btr {0} len {1}",
+                                            BaseStream.BytesToRead, length);
+                                        break;
+                                    }
 
                                     if (BaseStream.IsOpen)
                                     {
