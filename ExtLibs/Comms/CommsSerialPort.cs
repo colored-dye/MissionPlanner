@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -189,6 +190,8 @@ namespace MissionPlanner.Comms
             }
         }
 
+        Int64 decrypt_time = 0;
+        Int64 decrypt_cnt = 0;
         void WaitDecryptedData(int count)
         {
             // Wait until `count` bytes of data are available
@@ -238,11 +241,16 @@ namespace MissionPlanner.Comms
                     }
                 }
 
+                var start = Stopwatch.GetTimestamp();
                 if (gec.decrypt(2, ct, pt) != GEC.GEC.GEC_RET.GEC_SUCCESS)
                 {
                     Console.WriteLine("Decrypt failed");
                     continue;
                 }
+                var end = Stopwatch.GetTimestamp();
+                decrypt_time += end - start;
+                decrypt_cnt++;
+                Console.WriteLine("Decrypt time: {0}", decrypt_time / ++decrypt_cnt);
 
                 foreach (var b in pt.byte_array)
                 {
@@ -308,6 +316,9 @@ namespace MissionPlanner.Comms
             _baseport.Write(text);
         }
 
+        Int64 encrypt_time = 0;
+        Int64 encrypt_cnt = 0;
+
         public void Write(byte[] buffer, int offset, int count)
         {
             //_baseport.Write(buffer, offset, count);
@@ -335,11 +346,16 @@ namespace MissionPlanner.Comms
                     }
                 }
 
+                var start = Stopwatch.GetTimestamp(); ;
                 if (gec.encrypt(1, pt, ct) != GEC.GEC.GEC_RET.GEC_SUCCESS)
                 {
                     Console.WriteLine("Encrypt failed");
                     continue;
                 }
+                var end = Stopwatch.GetTimestamp(); ;
+                encrypt_time += end - start;
+                encrypt_cnt++;
+                Console.WriteLine("Encrypt time: {0}", encrypt_time / encrypt_cnt);
 
                 Array.ConstrainedCopy(ct.byte_array, 0, ct_frame.byte_array, 2, GEC.GEC.GEC_CT_LEN);
 
