@@ -192,33 +192,50 @@ namespace MissionPlanner.Comms
         void WaitDecryptedData(int count)
         {
             // Wait until `count` bytes of data are available
-            while (plaintext_queue.Count < count)
+            while (plaintext_queue.Count < count && _baseport.IsOpen)
             {
                 var ct = new GEC.GEC.Gec_ciphertext();
                 var pt = new GEC.GEC.Gec_plaintext();
 
-                while (true)
+                while (_baseport.IsOpen)
                 {
-                    int c = _baseport.ReadByte();
-                    if ((byte)c == GEC.GEC.GEC_CT_FRAME_MAGIC)
+                    try
                     {
-                        do
+                        int c = _baseport.ReadByte();
+                        if ((byte)c == GEC.GEC.GEC_CT_FRAME_MAGIC)
                         {
-                            c = _baseport.ReadByte();
-                        } while (c == -1);
+                            c = -1;
+                            while (c == -1 && _baseport.IsOpen)
+                            {
+                                c = _baseport.ReadByte();
+                            }
 
-                        if ((byte)c == GEC.GEC.GEC_CT_FRAME_TAG)
-                        {
-                            break;
+                            if ((byte)c == GEC.GEC.GEC_CT_FRAME_TAG)
+                            {
+                                break;
+                            }
                         }
+                    }
+                    catch (System.IO.IOException e)
+                    {
+                        Console.WriteLine("IOException: {0}", e);
+                        return;
                     }
                 }
 
                 int cnt = 0;
-                while (cnt < GEC.GEC.GEC_CT_LEN)
+                while (cnt < GEC.GEC.GEC_CT_LEN && _baseport.IsOpen)
                 {
-                    int len = _baseport.Read(ct.byte_array, cnt, GEC.GEC.GEC_CT_LEN - cnt);
-                    cnt += len;
+                    try
+                    {
+                        int len = _baseport.Read(ct.byte_array, cnt, GEC.GEC.GEC_CT_LEN - cnt);
+                        cnt += len;
+                    }
+                    catch (System.IO.IOException e)
+                    {
+                        Console.WriteLine("IOException: {0}", e);
+                        return;
+                    }
                 }
 
                 if (gec.decrypt(2, ct, pt) != GEC.GEC.GEC_RET.GEC_SUCCESS)
@@ -252,10 +269,6 @@ namespace MissionPlanner.Comms
                     i++;
                     local_count++;
                 }
-                //else
-                //{
-                //    break;
-                //}
             }
 
             return local_count;
@@ -330,7 +343,10 @@ namespace MissionPlanner.Comms
 
                 Array.ConstrainedCopy(ct.byte_array, 0, ct_frame.byte_array, 2, GEC.GEC.GEC_CT_LEN);
 
-                _baseport.Write(ct_frame.byte_array, 0, ct_frame.byte_array.Length);
+                if (_baseport.IsOpen)
+                {
+                    _baseport.Write(ct_frame.byte_array, 0, ct_frame.byte_array.Length);
+                }
             }
         }
 
