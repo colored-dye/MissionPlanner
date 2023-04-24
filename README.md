@@ -1,3 +1,5 @@
+Forked from master branch, commit f094171521ed10860cf56b2c0871b2d445d848b8.
+
 # MissionPlanner
 
 ![Dot Net](https://github.com/ardupilot/missionplanner/actions/workflows/main.yml/badge.svg) ![Android](https://github.com/ardupilot/missionplanner/actions/workflows/android.yml/badge.svg) ![OSX/IOS](https://github.com/ardupilot/missionplanner/actions/workflows/mac.yml/badge.svg)
