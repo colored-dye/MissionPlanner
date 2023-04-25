@@ -23,6 +23,8 @@ namespace MissionPlanner.Comms
 
         public ICommsSerial _baseport;
 
+        public bool Encrypt = true;
+
         public SerialPort()
         {
             _baseport = DefaultType.Invoke(this, null, 0);
@@ -52,12 +54,13 @@ namespace MissionPlanner.Comms
         {
             get
             {
-                if (_baseport == null) return 0; return _baseport.BaudRate; }
+                if (_baseport == null) return 0; return _baseport.BaudRate;
+            }
             set
             {
                 if (_baseport == null)
                     _baseport = DefaultType.Invoke(this, PortName, value);
-                if(_baseport == null) // we are trying to set baudrate on a port that has no portname/doesnt exist
+                if (_baseport == null) // we are trying to set baudrate on a port that has no portname/doesnt exist
                     return;
                 _baseport.BaudRate = value;
             }
@@ -68,8 +71,10 @@ namespace MissionPlanner.Comms
         {
             get
             {
-                //WaitDecryptedData(GEC.GEC.GEC_PT_LEN);
-                return plaintext_queue.Count;
+                if (Encrypt)
+                    return plaintext_queue.Count;
+                else
+                    return _baseport.BytesToRead;
             }
         }
 
@@ -78,7 +83,10 @@ namespace MissionPlanner.Comms
         {
             get
             {
-                return ciphertext_queue.Count;
+                if (Encrypt)
+                    return ciphertext_queue.Count;
+                else
+                    return _baseport.BytesToWrite;
             }
         }
 
@@ -152,15 +160,18 @@ namespace MissionPlanner.Comms
         public void Close()
         {
             _baseport.Close();
-            while (plaintext_queue.TryDequeue(out _))
+            if (Encrypt)
             {
+                while (plaintext_queue.TryDequeue(out _))
+                {
 
-            }
-            while (ciphertext_queue.TryDequeue(out _))
-            {
+                }
+                while (ciphertext_queue.TryDequeue(out _))
+                {
 
+                }
+                bgw.CancelAsync();
             }
-            bgw.CancelAsync();
         }
 
         public void DiscardInBuffer()
@@ -171,9 +182,12 @@ namespace MissionPlanner.Comms
         public void Open()
         {
             _baseport.Open();
-            bgw = new System.ComponentModel.BackgroundWorker();
-            bgw.DoWork += DoWork;
-            bgw.RunWorkerAsync();
+            if (Encrypt)
+            {
+                bgw = new System.ComponentModel.BackgroundWorker();
+                bgw.DoWork += DoWork;
+                bgw.RunWorkerAsync();
+            }
         }
 
         GEC.GEC gec = new GEC.GEC();
@@ -261,7 +275,10 @@ namespace MissionPlanner.Comms
 
         public int Read(byte[] buffer, int offset, int count)
         {
-            //return _baseport.Read(buffer, offset, count);
+            if (!Encrypt)
+            {
+                return _baseport.Read(buffer, offset, count);
+            }
 
             if (buffer == null)
             {
@@ -270,7 +287,7 @@ namespace MissionPlanner.Comms
 
             int local_count = 0;
             //WaitDecryptedData(count);
-            for (int i=0; i<count; )
+            for (int i = 0; i < count;)
             {
                 if (plaintext_queue.TryDequeue(out buffer[offset + i]))
                 {
@@ -284,7 +301,10 @@ namespace MissionPlanner.Comms
 
         public int ReadByte()
         {
-            //return _baseport.ReadByte();
+            if (!Encrypt)
+            {
+                return _baseport.ReadByte();
+            }
 
             //WaitDecryptedData(1);
             byte b;
@@ -321,9 +341,13 @@ namespace MissionPlanner.Comms
 
         public void Write(byte[] buffer, int offset, int count)
         {
-            //_baseport.Write(buffer, offset, count);
+            if (!Encrypt)
+            {
+                _baseport.Write(buffer, offset, count);
+                return;
+            }
 
-            for (int i=0; i<count; i++)
+            for (int i = 0; i < count; i++)
             {
                 ciphertext_queue.Enqueue(buffer[offset + i]);
             }
@@ -337,11 +361,12 @@ namespace MissionPlanner.Comms
             var pt = new GEC.GEC.Gec_plaintext();
             var ct = new GEC.GEC.Gec_ciphertext();
 
-            for (int i=0; i < loop; i++)
+            for (int i = 0; i < loop; i++)
             {
-                for (int j=0; j < GEC.GEC.GEC_PT_LEN; )
+                for (int j = 0; j < GEC.GEC.GEC_PT_LEN;)
                 {
-                    if (ciphertext_queue.TryDequeue(out pt.byte_array[j])) {
+                    if (ciphertext_queue.TryDequeue(out pt.byte_array[j]))
+                    {
                         j++;
                     }
                 }
@@ -516,7 +541,7 @@ namespace MissionPlanner.Comms
 
                 comportnamecache[port] = portnamenice;
 
-                return (string) portnamenice.Clone();
+                return (string)portnamenice.Clone();
             }
         }
 
@@ -771,7 +796,7 @@ namespace MissionPlanner.Comms
         private SerialPortFixer(string portName)
         {
             const int dwFlagsAndAttributes = 0x40000000;
-            const int dwAccess = unchecked((int) 0xC0000000);
+            const int dwAccess = unchecked((int)0xC0000000);
             if (portName == null || !portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("Invalid Serial Port", "portName");
             var hFile = NativeMethods.CreateFile(@"\\.\" + portName, dwAccess, 0, IntPtr.Zero, 3, dwFlagsAndAttributes,
@@ -839,7 +864,7 @@ namespace MissionPlanner.Comms
 
         private static int MakeHrFromErrorCode(int errorCode)
         {
-            return (int) (0x80070000 | (uint) errorCode);
+            return (int)(0x80070000 | (uint)errorCode);
         }
 
         private static void WinIoError()

@@ -796,6 +796,7 @@ namespace MissionPlanner
             _connectionControl.CMB_serialport.SelectedIndexChanged += this.CMB_serialport_SelectedIndexChanged;
             _connectionControl.CMB_serialport.Click += this.CMB_serialport_Click;
             _connectionControl.cmb_sysid.Click += cmb_sysid_Click;
+            _connectionControl.button1.Click += cmb_encrypt_Click;
 
             _connectionControl.ShowLinkStats += (sender, e) => ShowConnectionStatsForm();
             srtm.datadirectory = $"{Settings.GetDataDirectory()}srtm";
@@ -1157,6 +1158,21 @@ namespace MissionPlanner
         void cmb_sysid_Click(object sender, EventArgs e)
         {
             MainV2._connectionControl.UpdateSysIDS();
+        }
+
+        void cmb_encrypt_Click(object sender, EventArgs e)
+        {
+            if (MainV2.comPort.BaseStream is SerialPort)
+            {
+                ((SerialPort)MainV2.comPort.BaseStream).Encrypt = !((SerialPort)MainV2.comPort.BaseStream).Encrypt;
+                if (((SerialPort)MainV2.comPort.BaseStream).Encrypt)
+                {
+                    _connectionControl.button1.Text = "Encrypted";
+                } else
+                {
+                    _connectionControl.button1.Text = "Not encrypted";
+                }
+            }
         }
 
         void comPort_MavChanged(object sender, EventArgs e)

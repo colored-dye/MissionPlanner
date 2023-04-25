@@ -119,7 +119,7 @@
   </resheader>
   <assembly alias="mscorlib" name="mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="cmb_Baud.ItemHeight" type="System.Int32, mscorlib">
-    <value>13</value>
+    <value>12</value>
   </data>
   <data name="cmb_Baud.Items" xml:space="preserve">
     <value>1200</value>
@@ -171,13 +171,13 @@
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="cmb_Baud.Location" type="System.Drawing.Point, System.Drawing">
-    <value>127, 0</value>
+    <value>206, 0</value>
   </data>
   <data name="cmb_Baud.MaxDropDownItems" type="System.Int32, mscorlib">
     <value>15</value>
   </data>
   <data name="cmb_Baud.Size" type="System.Drawing.Size, System.Drawing">
-    <value>111, 21</value>
+    <value>111, 20</value>
   </data>
   <data name="cmb_Baud.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -192,16 +192,16 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;cmb_Baud.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="cmb_Connection.Location" type="System.Drawing.Point, System.Drawing">
-    <value>0, 0</value>
+    <value>79, 0</value>
   </data>
   <data name="cmb_Connection.MaxDropDownItems" type="System.Int32, mscorlib">
     <value>12</value>
   </data>
   <data name="cmb_Connection.Size" type="System.Drawing.Size, System.Drawing">
-    <value>121, 21</value>
+    <value>121, 22</value>
   </data>
   <data name="cmb_Connection.TabIndex" type="System.Int32, mscorlib">
     <value>2</value>
@@ -216,16 +216,16 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;cmb_Connection.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>3</value>
   </data>
   <data name="linkLabel1.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
   <data name="linkLabel1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>3, 32</value>
+    <value>122, 25</value>
   </data>
   <data name="linkLabel1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>40, 13</value>
+    <value>53, 12</value>
   </data>
   <data name="linkLabel1.TabIndex" type="System.Int32, mscorlib">
     <value>3</value>
@@ -246,13 +246,13 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;linkLabel1.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>2</value>
   </data>
   <data name="cmb_sysid.Location" type="System.Drawing.Point, System.Drawing">
-    <value>102, 27</value>
+    <value>181, 22</value>
   </data>
   <data name="cmb_sysid.Size" type="System.Drawing.Size, System.Drawing">
-    <value>136, 21</value>
+    <value>136, 20</value>
   </data>
   <data name="cmb_sysid.TabIndex" type="System.Int32, mscorlib">
     <value>4</value>
@@ -267,6 +267,34 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;cmb_sysid.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="button1.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="button1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>30, 19</value>
+  </data>
+  <data name="button1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>75, 23</value>
+  </data>
+  <data name="button1.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="button1.Text" xml:space="preserve">
+    <value>Encrypted</value>
+  </data>
+  <data name="&gt;&gt;button1.Name" xml:space="preserve">
+    <value>button1</value>
+  </data>
+  <data name="&gt;&gt;button1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;button1.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;button1.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
@@ -276,7 +304,7 @@
     <value>200, 47</value>
   </data>
   <data name="$this.Size" type="System.Drawing.Size, System.Drawing">
-    <value>238, 47</value>
+    <value>327, 47</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>ConnectionControl</value>
