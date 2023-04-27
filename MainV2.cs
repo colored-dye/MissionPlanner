@@ -1164,13 +1164,18 @@ namespace MissionPlanner
         {
             if (MainV2.comPort.BaseStream is SerialPort)
             {
-                ((SerialPort)MainV2.comPort.BaseStream).Encrypt = !((SerialPort)MainV2.comPort.BaseStream).Encrypt;
-                if (((SerialPort)MainV2.comPort.BaseStream).Encrypt)
+                comPort.Encrypt = !comPort.Encrypt;
+                var baseStream = (SerialPort)comPort.BaseStream;
+                baseStream.Encrypt = comPort.Encrypt;
+
+                //((SerialPort)MainV2.comPort.BaseStream).Encrypt = !((SerialPort)MainV2.comPort.BaseStream).Encrypt;
+                //if (((SerialPort)MainV2.comPort.BaseStream).Encrypt)
+                if (comPort.Encrypt)
                 {
-                    _connectionControl.button1.Text = "Encrypted";
+                    _connectionControl.button1.Text = "Encrypting";
                 } else
                 {
-                    _connectionControl.button1.Text = "Not encrypted";
+                    _connectionControl.button1.Text = "No encrypt";
                 }
             }
         }
@@ -2324,10 +2329,15 @@ namespace MissionPlanner
         /// </summary>
         private async void joysticksend()
         {
-            float rate = 50; // 1000 / 50 = 20 hz
+            //float rate = 50; // 1000 / 50 = 20 hz
+            float rate = 1;
             int count = 0;
 
             DateTime lastratechange = DateTime.Now;
+
+            long lastTime = 0;
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
 
             joystickthreadrun = true;
 
@@ -2431,6 +2441,15 @@ namespace MissionPlanner
                                 if (joystick.getJoystickAxis(18) != Joystick.joystickaxis.None)
                                     rc.chan18_raw = (ushort) MainV2.comPort.MAV.cs.rcoverridech18;
 
+                                var time = stopWatch.ElapsedTicks;
+                                if (lastTime == 0)
+                                {
+                                    lastTime = time;
+                                } else
+                                {
+                                    Console.WriteLine("==== Joy stick time: {0}", time - lastTime);
+                                    lastTime = time;
+                                }
                                 if (lastjoystick.AddMilliseconds(rate) < DateTime.Now)
                                 {
                                     /*
@@ -2466,7 +2485,7 @@ namespace MissionPlanner
                                     if (!comPort.BaseStream.IsOpen)
                                         continue;
 
-                                    if (comPort.BaseStream.BytesToWrite < 50)
+                                    //if (comPort.BaseStream.BytesToWrite < 50)
                                     {
                                         if (sitl)
                                         {

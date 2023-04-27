@@ -174,7 +174,7 @@ namespace MissionPlanner.Joystick
 
             joystick.GetCurrentState();
 
-            System.Threading.Thread.Sleep(500);
+            //System.Threading.Thread.Sleep(500);
 
             var obj = joystick.GetCurrentState();
 
@@ -1010,7 +1010,7 @@ namespace MissionPlanner.Joystick
             {
                 try
                 {
-                    System.Threading.Thread.Sleep(50);
+                    //System.Threading.Thread.Sleep(50);
                     //joystick stuff
                     state = GetCurrentState();
 
@@ -1158,7 +1158,7 @@ namespace MissionPlanner.Joystick
 
             js.GetCurrentState();
 
-            System.Threading.Thread.Sleep(300);
+            //System.Threading.Thread.Sleep(300);
             
             var obj = js.GetCurrentState();
             Hashtable values = new Hashtable();
@@ -1183,7 +1183,7 @@ namespace MissionPlanner.Joystick
 
             while (start.AddSeconds(10) > DateTime.Now)
             {
-                System.Threading.Thread.Sleep(50);
+                //System.Threading.Thread.Sleep(50);
                 var nextstate = js.GetCurrentState();
 
                 int[] slider = nextstate.GetSlider();

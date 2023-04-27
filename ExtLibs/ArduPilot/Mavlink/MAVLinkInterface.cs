@@ -28,6 +28,8 @@ namespace MissionPlanner
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private ICommsSerial _baseStream;
 
+        public bool Encrypt = true;
+
         public ICommsSerial BaseStream
         {
             get { return _baseStream; }
@@ -62,6 +64,10 @@ namespace MissionPlanner
                 }
 
                 _baseStream = value;
+                if (_baseStream is SerialPort)
+                {
+                    ((SerialPort)_baseStream).Encrypt = Encrypt;
+                }
             }
         }
 

@@ -170,7 +170,11 @@ namespace MissionPlanner.Comms
                 {
 
                 }
-                bgw.CancelAsync();
+                if (bgw != null)
+                {
+                    bgw.CancelAsync();
+                    bgw.Dispose();
+                }
             }
         }
 
@@ -313,7 +317,7 @@ namespace MissionPlanner.Comms
 
             }
 
-            return (int)b;
+            return b;
         }
 
         public int ReadChar()
