@@ -188,6 +188,11 @@ namespace MissionPlanner.Comms
             _baseport.Open();
             if (Encrypt)
             {
+                if (!key_ready)
+                {
+                    KeyExchange();
+                }
+
                 bgw = new System.ComponentModel.BackgroundWorker();
                 bgw.DoWork += DoWork;
                 bgw.RunWorkerAsync();
@@ -195,10 +200,62 @@ namespace MissionPlanner.Comms
         }
 
         GEC.GEC gec = new GEC.GEC();
+        bool key_ready = false;
         System.Collections.Concurrent.ConcurrentQueue<byte> plaintext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
         System.Collections.Concurrent.ConcurrentQueue<byte> ciphertext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
 
         System.ComponentModel.BackgroundWorker bgw;
+
+        void read_from_BasePort(byte[] buf, int len)
+        {
+            int cnt = 0;
+            while (cnt < len)
+            {
+                int n = _baseport.Read(buf, cnt, len - cnt);
+                cnt += n;
+            }
+        }
+
+        void KeyExchange()
+        {
+            var random_data = new byte[GEC.GEC.RANDOM_DATA_LEN];
+            var rand = new Random();
+            rand.NextBytes(random_data);
+
+            var ctx = new byte[GEC.GEC.GEC_CONTEXT_LEN];
+            var pubkey = new byte[GEC.GEC.GEC_PUBKEY_LEN];
+            var privkey = new byte[GEC.GEC.GEC_PRIVKEY_LEN];
+            var their_pubkey = new byte[GEC.GEC.GEC_PUBKEY_LEN];
+
+            var msg1 = new byte[GEC.GEC.MSG_1_LEN];
+            var msg2 = new byte[GEC.GEC.MSG_2_LEN];
+            var msg3 = new byte[GEC.GEC.MSG_3_LEN];
+
+            var key_material = new byte[GEC.GEC.KEY_MATERIAL_LEN];
+
+            // Read pubkey
+            read_from_BasePort(their_pubkey, their_pubkey.Length);
+
+            // Send pubkey
+            _baseport.Write(pubkey, 0, pubkey.Length);
+
+            GEC.GEC.init_context(ctx, pubkey, privkey, their_pubkey);
+
+            // Read MSG 1
+            read_from_BasePort(msg1, msg1.Length);
+
+            GEC.GEC.respond_sts(msg1, msg2, ctx, random_data);
+
+            // Send MSG 2
+            _baseport.Write(msg2, 0, msg2.Length);
+
+            // Read MSG 3
+            read_from_BasePort(msg3, msg3.Length);
+
+            GEC.GEC.finish_sts(msg3, ctx, key_material);
+
+            GEC.GEC.gec_key_material_to_2_channels(gec.sym_key_chan1.byte_array, gec.sym_key_chan2.byte_array, key_material);
+        }
 
         void DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {

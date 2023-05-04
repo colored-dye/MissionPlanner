@@ -48,10 +48,29 @@
         /// </summary>
         public const int GEC_RAW_KEY_LEN = _GEC_SALT_LEN + _GEC_SYM_CIPHER_KEY_LEN;
 
+        public const int KEY_MATERIAL_LEN = 2 * GEC_RAW_KEY_LEN;
+
+        public const int RANDOM_DATA_LEN = 32;
+
+        public const int GEC_PRIVKEY_LEN = 64;
+
+        public const int GEC_PUBKEY_LEN = 32;
+
+        public const int GEC_CONTEXT_LEN = 680;
+
+        public const int GEC_SIG_LEN = 64;
+
+        public const int MSG_1_LEN = 32;
+
+        public const int MSG_2_LEN = MSG_1_LEN + GEC_SIG_LEN;
+
+        public const int MSG_3_LEN = GEC_SIG_LEN;
+
         /// <summary>
         /// Defines the GEC_SYM_KEY_LEN.
         /// </summary>
-        private const int GEC_SYM_KEY_LEN = 3619312;
+        //public const int GEC_SYM_KEY_LEN = 3619312;
+        public const int GEC_SYM_KEY_LEN = 4392;
 
         /// <summary>
         /// Defines the sym_key_chan1.
@@ -272,6 +291,18 @@
         [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern int gec_decrypt([In] byte[] k, [In] byte[] ct, [Out] byte[] pt);
 
+        [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int generate([Out] byte[] pubkey, [Out] byte[] privkey, [In] byte[] random_data);
+
+        [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int init_context(byte[] ctx, byte[] pubkey, byte[] privkey, byte[] their_pubkey);
+
+        [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int respond_sts(byte[] msg1, byte[] msg2, byte[] ctx, byte[] random_data);
+
+        [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int finish_sts(byte[] msg3, byte[] ctx, byte[] key_material);
+
         /// <summary>
         /// Initializes a new instance of the <see cref="GEC"/> class.
         /// </summary>
@@ -279,17 +310,17 @@
         {
             sym_key_chan1 = new Gec_sym_key();
             sym_key_chan2 = new Gec_sym_key();
-            Gec_raw_key raw_key1 = new Gec_raw_key(raw_key_1);
-            Gec_raw_key raw_key2 = new Gec_raw_key(raw_key_2);
-            try
-            {
-                gec_init_sym_key_conf_auth(sym_key_chan1.byte_array, raw_key1.byte_array);
-                gec_init_sym_key_conf_auth(sym_key_chan2.byte_array, raw_key2.byte_array);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
+            //Gec_raw_key raw_key1 = new Gec_raw_key(raw_key_1);
+            //Gec_raw_key raw_key2 = new Gec_raw_key(raw_key_2);
+            //try
+            //{
+            //    gec_init_sym_key_conf_auth(sym_key_chan1.byte_array, raw_key1.byte_array);
+            //    gec_init_sym_key_conf_auth(sym_key_chan2.byte_array, raw_key2.byte_array);
+            //}
+            //catch (Exception e)
+            //{
+            //    Console.WriteLine(e);
+            //}
         }
 
         public enum GEC_RET {
