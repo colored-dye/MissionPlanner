@@ -174,6 +174,7 @@ namespace MissionPlanner.Comms
                 {
                     bgw.CancelAsync();
                     bgw.Dispose();
+                    bgw = null;
                 }
             }
         }
@@ -186,6 +187,7 @@ namespace MissionPlanner.Comms
         public void Open()
         {
             _baseport.Open();
+            _baseport.DiscardInBuffer();
             if (Encrypt)
             {
                 if (!key_ready)
@@ -194,17 +196,17 @@ namespace MissionPlanner.Comms
                 }
 
                 bgw = new System.ComponentModel.BackgroundWorker();
-                bgw.DoWork += DoWork;
+                bgw.DoWork += DoDecryptWork;
                 bgw.RunWorkerAsync();
             }
         }
 
-        GEC.GEC gec = new GEC.GEC();
-        bool key_ready = false;
+        public GEC.GEC gec = new GEC.GEC();
+        public bool key_ready = false;
         System.Collections.Concurrent.ConcurrentQueue<byte> plaintext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
         System.Collections.Concurrent.ConcurrentQueue<byte> ciphertext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
 
-        System.ComponentModel.BackgroundWorker bgw;
+        System.ComponentModel.BackgroundWorker bgw = null;
 
         void read_from_BasePort(byte[] buf, int len)
         {
@@ -233,31 +235,46 @@ namespace MissionPlanner.Comms
 
             var key_material = new byte[GEC.GEC.KEY_MATERIAL_LEN];
 
-            // Read pubkey
-            read_from_BasePort(their_pubkey, their_pubkey.Length);
+            GEC.GEC.generate(pubkey, privkey, random_data);
 
+            Console.WriteLine("Send our pubkey");
             // Send pubkey
             _baseport.Write(pubkey, 0, pubkey.Length);
 
+            Console.WriteLine("Wait their pubkey");
+            // Read pubkey
+            read_from_BasePort(their_pubkey, their_pubkey.Length);
+            Console.WriteLine("Got their pubkey");
+
             GEC.GEC.init_context(ctx, pubkey, privkey, their_pubkey);
 
-            // Read MSG 1
-            read_from_BasePort(msg1, msg1.Length);
+            Console.WriteLine("initiate_sts");
+            if (GEC.GEC.initiate_sts(msg1, ctx, random_data) != 0)
+            {
+                Console.WriteLine("initiate_sts failed");
+            }
 
-            GEC.GEC.respond_sts(msg1, msg2, ctx, random_data);
+            Console.WriteLine("Send MSG 1");
+            _baseport.Write(msg1, 0, msg1.Length);
 
-            // Send MSG 2
-            _baseport.Write(msg2, 0, msg2.Length);
+            Console.WriteLine("Wait MSG 2");
+            read_from_BasePort(msg2, msg2.Length);
+            Console.WriteLine("Got MSG 2");
 
-            // Read MSG 3
-            read_from_BasePort(msg3, msg3.Length);
+            Console.WriteLine("response_ack_sts");
+            if (GEC.GEC.response_ack_sts(msg2, msg3, ctx, key_material) != 0)
+            {
+                Console.WriteLine("response_ack_sts failed");
+            }
 
-            GEC.GEC.finish_sts(msg3, ctx, key_material);
+            Console.WriteLine("Send MSG 3");
+            _baseport.Write(msg3, 0, msg3.Length);
 
             GEC.GEC.gec_key_material_to_2_channels(gec.sym_key_chan1.byte_array, gec.sym_key_chan2.byte_array, key_material);
+            key_ready = true;
         }
 
-        void DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        void DoDecryptWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
             while (IsOpen)
             {
@@ -299,6 +316,11 @@ namespace MissionPlanner.Comms
                         Console.WriteLine("IOException: {0}", e);
                         return;
                     }
+                    catch (System.TimeoutException e)
+                    {
+                        Console.WriteLine("TimeoutException: {0}", e);
+                        return;
+                    }
                 }
 
                 int cnt = 0;
@@ -312,6 +334,11 @@ namespace MissionPlanner.Comms
                     catch (System.IO.IOException e)
                     {
                         Console.WriteLine("IOException: {0}", e);
+                        return;
+                    }
+                    catch (System.TimeoutException e)
+                    {
+                        Console.WriteLine("TimeoutException: {0}", e);
                         return;
                     }
                 }

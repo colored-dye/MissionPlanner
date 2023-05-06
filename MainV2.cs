@@ -1553,6 +1553,8 @@ namespace MissionPlanner
             }
 
             this.MenuConnect.Image = global::MissionPlanner.Properties.Resources.light_connect_icon;
+
+            Thread.Sleep(1000);
         }
 
         public void doConnect(MAVLinkInterface comPort, string portname, string baud, bool getparams = true, bool showui = true)

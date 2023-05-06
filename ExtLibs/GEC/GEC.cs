@@ -69,8 +69,8 @@
         /// <summary>
         /// Defines the GEC_SYM_KEY_LEN.
         /// </summary>
-        //public const int GEC_SYM_KEY_LEN = 3619312;
-        public const int GEC_SYM_KEY_LEN = 4392;
+        public const int GEC_SYM_KEY_LEN = 3619312;
+        //public const int GEC_SYM_KEY_LEN = 4392;
 
         /// <summary>
         /// Defines the sym_key_chan1.
@@ -292,16 +292,25 @@
         public static extern int gec_decrypt([In] byte[] k, [In] byte[] ct, [Out] byte[] pt);
 
         [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int generate([Out] byte[] pubkey, [Out] byte[] privkey, [In] byte[] random_data);
+        public static extern void generate([Out] byte[] pubkey, [Out] byte[] privkey, [In] byte[] random_data);
 
         [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int init_context(byte[] ctx, byte[] pubkey, byte[] privkey, byte[] their_pubkey);
+        public static extern int init_context([Out] byte[] ctx, [In] byte[] pubkey, [In] byte[] privkey, [In] byte[] their_pubkey);
 
         [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int respond_sts(byte[] msg1, byte[] msg2, byte[] ctx, byte[] random_data);
+        public static extern int initiate_sts([Out] byte[] msg1, [Out] byte[] ctx, [In] byte[] random_data);
 
         [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int finish_sts(byte[] msg3, byte[] ctx, byte[] key_material);
+        public static extern int response_ack_sts([In] byte[] msg2
+                    , [Out] byte[] msg3
+                    , [Out] byte[] ctx
+                    , [Out] byte[] key_material);
+
+        [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int respond_sts([In] byte[] msg1, [Out] byte[] msg2, [Out] byte[] ctx, [In] byte[] random_data);
+
+        [DllImport("GEC_base.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int finish_sts([In] byte[] msg3, [Out] byte[] ctx, [Out] byte[] key_material);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GEC"/> class.

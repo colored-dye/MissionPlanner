@@ -29,6 +29,8 @@ namespace MissionPlanner
         private ICommsSerial _baseStream;
 
         public bool Encrypt = true;
+        private bool key_ready = false;
+        GEC.GEC gec = new GEC.GEC();
 
         public ICommsSerial BaseStream
         {
@@ -67,6 +69,11 @@ namespace MissionPlanner
                 if (_baseStream is SerialPort)
                 {
                     ((SerialPort)_baseStream).Encrypt = Encrypt;
+                    ((SerialPort)_baseStream).key_ready = key_ready;
+                    if (key_ready)
+                    {
+                        ((SerialPort)_baseStream).gec = gec;
+                    }
                 }
             }
         }
@@ -580,7 +587,11 @@ namespace MissionPlanner
             {
             }
 
-            //plaintext_queue.Clear();
+            if (_baseStream is SerialPort port && !key_ready)
+            {
+                key_ready = port.key_ready;
+                gec = port.gec;
+            }
         }
 
         public delegate IProgressReporterDialogue ProgressEventHandle(string title);
@@ -4572,103 +4583,6 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
             return readPacketAsync().AwaitSync();
         }
 
-        //void bgw_Decrypt(object sender, System.ComponentModel.DoWorkEventArgs e)
-        //{
-        //    while (BaseStream.IsOpen)
-        //    {
-        //        DecryptToReceiveQueue();
-        //    }
-        //}
-
-        //bool DecryptToReceiveQueue()
-        //{
-        //    var ct = new GEC.GEC.Gec_ciphertext();
-        //    var pt = new GEC.GEC.Gec_plaintext();
-
-        //    int cnt = 0;
-
-        //    while (true)
-        //    {
-        //        try
-        //        {
-        //            int c = BaseStream.ReadByte();
-        //            if (c != -1 && (byte)c == GEC.GEC.GEC_CT_FRAME_MAGIC)
-        //            {
-        //                do
-        //                {
-        //                    c = BaseStream.ReadByte();
-        //                } while (c == -1);
-        //                if ((byte)c == GEC.GEC.GEC_CT_FRAME_TAG)
-        //                {
-        //                    break;
-        //                }
-        //            }
-        //        }
-        //        catch (TimeoutException)
-        //        {
-        //            if (debug)
-        //            {
-        //                Console.WriteLine("DecryptToReceiveQueue: TimeoutException");
-        //            }
-        //        }
-        //        catch (System.IO.IOException)
-        //        {
-        //            if (debug)
-        //            {
-        //                Console.WriteLine("DecryptToReceiveQueue: IOException");
-        //            }
-        //            return true;
-        //        }
-        //    }
-
-        //    while (cnt < GEC.GEC.GEC_CT_LEN)
-        //    {
-        //        try
-        //        {
-        //            int len = BaseStream.Read(ct.byte_array, cnt, GEC.GEC.GEC_CT_LEN - cnt);
-        //            cnt += len;
-        //        }
-        //        catch (TimeoutException)
-        //        {
-        //            if (debug)
-        //                Console.WriteLine("DecryptToReceiveQueue: TimeoutException");
-        //        }
-        //        catch (System.IO.IOException)
-        //        {
-        //            if (debug)
-        //                Console.WriteLine("DecryptToReceiveQueue: IOException");
-        //            return true;
-        //        }
-        //    }
-
-        //    if (!gec.decrypt(2, ct, pt))
-        //    {
-        //        if (debug)
-        //        {
-        //            Console.WriteLine("Decrypt failed");
-        //        }
-        //        return true;
-        //    }
-
-        //    Console.WriteLine("===========================");
-        //    for (int i=0; i<pt.byte_array.Length; i++)
-        //    {
-        //        Console.Write("{0:D03} ", pt.byte_array[i]);
-        //    }
-        //    Console.WriteLine("\n===========================");
-
-        //    foreach (var b in pt.byte_array)
-        //    {
-        //        plaintext_queue.AddToBack(b);
-        //    }
-
-        //    //var pos = plaintextStream.Position;
-        //    //plaintextStream.Write(pt.byte_array, 0, pt.byte_array.Length);
-        //    //plaintextStream.Seek(pos, SeekOrigin.Begin);
-
-        //    return false;
-        //}
-
         public async Task<MAVLinkMessage> readPacketAsync()
         {
             byte[] buffer = new byte[MAVLINK_MAX_PACKET_LEN + 25];
@@ -4691,15 +4605,6 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                 Console.WriteLine(DateTime.Now.Millisecond + " SR0 " + BaseStream?.BytesToRead);
 
             await readlock.WaitAsync().ConfigureAwait(false);
-
-            //System.ComponentModel.BackgroundWorker bgw= new System.ComponentModel.BackgroundWorker();
-            //bgw.DoWork += bgw_Decrypt;
-            //bgw.RunWorkerAsync();
-
-            //while (DecryptToReceiveQueue())
-            //{
-
-            //}
 
             try
             {
@@ -4730,7 +4635,7 @@ Mission Planner waits for 2 valid heartbeat packets before connecting");
                             //if (BaseStream.ReadTimeout != 1200)
                             //    BaseStream.ReadTimeout =
                             //        1200; // 1200 ms between chars - the gps detection requires this.
-                            BaseStream.ReadTimeout = 4000;
+                            BaseStream.ReadTimeout = 10000;
 
                             // time updated for internal reference
                             MAV.cs.datetime = DateTime.Now;

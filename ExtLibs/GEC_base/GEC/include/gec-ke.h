@@ -71,11 +71,11 @@ struct gec_sts_ctx {
 typedef struct gec_sts_ctx gec_sts_ctx_t;
 
 // Generate private and public key pairs for future use.
-void generate(struct gec_pubkey *pk, struct gec_privkey *sk, const uint8_t random_data[RANDOM_DATA_LEN]);
+__declspec(dllexport) void generate(struct gec_pubkey *pk, struct gec_privkey *sk, const uint8_t random_data[RANDOM_DATA_LEN]);
 
 // Populate a context with long-term keys for the current system (public and
 // private) and the public key of a communication partner.
-void init_context( gec_sts_ctx_t *ctx
+__declspec(dllexport) void init_context( gec_sts_ctx_t *ctx
                  , const struct gec_pubkey *myPublicKey
                  , const struct gec_privkey *myPrivateKey
                  , const struct gec_pubkey *theirPublicKey);
@@ -96,13 +96,13 @@ void clear_ctx(gec_sts_ctx_t * ctx);
 
 // Party A's step 1
 // 1) Generate a random ephemeral public and private key pair. (ctx ~ privA_e, msg1 ~ publicA_e)
-int initiate_sts(uint8_t msg1[MSG_1_LEN], gec_sts_ctx_t *ctx, const uint8_t random_data[GEC_PRIV_KEY_LEN]);
+__declspec(dllexport) int initiate_sts(uint8_t msg1[MSG_1_LEN], gec_sts_ctx_t *ctx, const uint8_t random_data[GEC_PRIV_KEY_LEN]);
 
 // Party B's step 1
 // 2) Generate a random ephemeral public and private key pair.
 //    Compute the shared secrets k1, k2, and k3 from *_e.
 //    Construct the response:      msg2 = E_k2( sign_privB(pubA_e, pubB_e) )
-int respond_sts( const uint8_t msg1[MSG_1_LEN]
+__declspec(dllexport) int respond_sts( const uint8_t msg1[MSG_1_LEN]
                , uint8_t msg2[MSG_2_LEN]
                , gec_sts_ctx_t *ctx                               // Party 'B'
                , const uint8_t random_data[GEC_PRIV_KEY_LEN]);
@@ -111,7 +111,7 @@ int respond_sts( const uint8_t msg1[MSG_1_LEN]
 //    Verify msg2:                verify_pubB(D_k2(msg2)) &&  open(D_k2(msg2)) == (pubA_e, pubB_e)
 //    Construct the response:     msg3 = E_k1( sign_privA(pubB_e, pubA_e) )
 //    Set the key material:       key_material = k3
-int response_ack_sts( const uint8_t msg2[MSG_2_LEN]
+__declspec(dllexport) int response_ack_sts( const uint8_t msg2[MSG_2_LEN]
                     , uint8_t msg3[MSG_3_LEN]
                     , gec_sts_ctx_t *ctx
                     , uint8_t key_material[KEY_MATERIAL_LEN]);         // Party 'A'
@@ -119,7 +119,7 @@ int response_ack_sts( const uint8_t msg2[MSG_2_LEN]
 // Party B's step 2
 // 4) Verify msg3:                verify_pubA(D_k1(msg3)) &&  open(D_k1(msg3)) == (pubB_e, pubA_e)
 //    Set the key material:       key_material = k3
-int finish_sts( const uint8_t msg3[MSG_3_LEN]                          // Party 'B'
+__declspec(dllexport) int finish_sts( const uint8_t msg3[MSG_3_LEN]                          // Party 'B'
               , gec_sts_ctx_t *ctx
               , uint8_t key_material[KEY_MATERIAL_LEN]);
 
