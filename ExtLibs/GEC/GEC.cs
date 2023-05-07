@@ -69,8 +69,8 @@
         /// <summary>
         /// Defines the GEC_SYM_KEY_LEN.
         /// </summary>
-        public const int GEC_SYM_KEY_LEN = 3619312;
-        //public const int GEC_SYM_KEY_LEN = 4392;
+        //public const int GEC_SYM_KEY_LEN = 3619312;
+        public const int GEC_SYM_KEY_LEN = 4392;
 
         /// <summary>
         /// Defines the sym_key_chan1.

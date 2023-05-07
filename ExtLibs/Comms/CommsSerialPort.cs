@@ -72,7 +72,13 @@ namespace MissionPlanner.Comms
             get
             {
                 if (Encrypt)
+                {
+                    if (plaintext_queue == null)
+                    {
+                        return 0;
+                    }
                     return plaintext_queue.Count;
+                }
                 else
                     return _baseport.BytesToRead;
             }
@@ -84,7 +90,13 @@ namespace MissionPlanner.Comms
             get
             {
                 if (Encrypt)
+                {
+                    if (ciphertext_queue == null)
+                    {
+                        return 0;
+                    }
                     return ciphertext_queue.Count;
+                }
                 else
                     return _baseport.BytesToWrite;
             }
@@ -162,19 +174,28 @@ namespace MissionPlanner.Comms
             _baseport.Close();
             if (Encrypt)
             {
-                while (plaintext_queue.TryDequeue(out _))
+                try
                 {
+                    if (bgw != null)
+                    {
+                        bgw.CancelAsync();
+                        bgw.Dispose();
 
-                }
-                while (ciphertext_queue.TryDequeue(out _))
-                {
+                        bgw = null;
+                    }
 
+                    while (plaintext_queue.TryDequeue(out _))
+                    {
+
+                    }
+                    while (ciphertext_queue.TryDequeue(out _))
+                    {
+
+                    }
                 }
-                if (bgw != null)
+                catch (Exception e)
                 {
-                    bgw.CancelAsync();
-                    bgw.Dispose();
-                    bgw = null;
+                    Console.WriteLine("Exception: {0}", e);
                 }
             }
         }
@@ -190,19 +211,27 @@ namespace MissionPlanner.Comms
             _baseport.DiscardInBuffer();
             if (Encrypt)
             {
-                if (!key_ready)
+                try
                 {
-                    KeyExchange();
-                }
+                    if (!key_ready)
+                    {
+                        KeyExchange();
+                    }
 
-                bgw = new System.ComponentModel.BackgroundWorker();
-                bgw.DoWork += DoDecryptWork;
-                bgw.RunWorkerAsync();
+                    bgw = new System.ComponentModel.BackgroundWorker();
+                    bgw.WorkerSupportsCancellation = true;
+                    bgw.DoWork += DoDecryptWork;
+                    bgw.RunWorkerAsync();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Exception: {0}", e);
+                }
             }
         }
 
-        public GEC.GEC gec = new GEC.GEC();
-        public bool key_ready = false;
+        static GEC.GEC gec = new GEC.GEC();
+        static bool key_ready = false;
         System.Collections.Concurrent.ConcurrentQueue<byte> plaintext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
         System.Collections.Concurrent.ConcurrentQueue<byte> ciphertext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
 
@@ -248,6 +277,7 @@ namespace MissionPlanner.Comms
 
             GEC.GEC.init_context(ctx, pubkey, privkey, their_pubkey);
 
+            // Party A's step 1
             Console.WriteLine("initiate_sts");
             if (GEC.GEC.initiate_sts(msg1, ctx, random_data) != 0)
             {
@@ -261,6 +291,7 @@ namespace MissionPlanner.Comms
             read_from_BasePort(msg2, msg2.Length);
             Console.WriteLine("Got MSG 2");
 
+            // Party A's step 2
             Console.WriteLine("response_ack_sts");
             if (GEC.GEC.response_ack_sts(msg2, msg3, ctx, key_material) != 0)
             {
@@ -276,7 +307,7 @@ namespace MissionPlanner.Comms
 
         void DoDecryptWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
-            while (IsOpen)
+            while (IsOpen && _baseport.IsOpen)
             {
                 WaitDecryptedData(GEC.GEC.GEC_PT_LEN);
             }
@@ -311,16 +342,17 @@ namespace MissionPlanner.Comms
                             }
                         }
                     }
-                    catch (System.IO.IOException e)
-                    {
-                        Console.WriteLine("IOException: {0}", e);
-                        return;
-                    }
-                    catch (System.TimeoutException e)
-                    {
-                        Console.WriteLine("TimeoutException: {0}", e);
-                        return;
-                    }
+                    catch { }
+                    //catch (System.IO.IOException e)
+                    //{
+                    //    Console.WriteLine("IOException: {0}", e);
+                    //    return;
+                    //}
+                    //catch (System.TimeoutException e)
+                    //{
+                    //    Console.WriteLine("TimeoutException: {0}", e);
+                    //    return;
+                    //}
                 }
 
                 int cnt = 0;
@@ -331,16 +363,17 @@ namespace MissionPlanner.Comms
                         int len = _baseport.Read(ct.byte_array, cnt, GEC.GEC.GEC_CT_LEN - cnt);
                         cnt += len;
                     }
-                    catch (System.IO.IOException e)
-                    {
-                        Console.WriteLine("IOException: {0}", e);
-                        return;
-                    }
-                    catch (System.TimeoutException e)
-                    {
-                        Console.WriteLine("TimeoutException: {0}", e);
-                        return;
-                    }
+                    catch { }
+                    //catch (System.IO.IOException e)
+                    //{
+                    //    Console.WriteLine("IOException: {0}", e);
+                    //    return;
+                    //}
+                    //catch (System.TimeoutException e)
+                    //{
+                    //    Console.WriteLine("TimeoutException: {0}", e);
+                    //    return;
+                    //}
                 }
 
                 var start = Stopwatch.GetTimestamp();
@@ -374,7 +407,6 @@ namespace MissionPlanner.Comms
             }
 
             int local_count = 0;
-            //WaitDecryptedData(count);
             for (int i = 0; i < count;)
             {
                 if (plaintext_queue.TryDequeue(out buffer[offset + i]))
@@ -394,7 +426,6 @@ namespace MissionPlanner.Comms
                 return _baseport.ReadByte();
             }
 
-            //WaitDecryptedData(1);
             byte b;
             while (!plaintext_queue.TryDequeue(out b))
             {
