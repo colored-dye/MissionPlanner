@@ -72,6 +72,11 @@
         //public const int GEC_SYM_KEY_LEN = 3619312;
         public const int GEC_SYM_KEY_LEN = 4392;
 
+        public byte[] our_pubkey = new byte[GEC_PUBKEY_LEN];
+        public byte[] our_privkey = new byte[GEC_PRIVKEY_LEN];
+        public byte[] their_pubkey = new byte[GEC_PUBKEY_LEN];
+        public byte[] their_privkey = new byte[GEC_PRIVKEY_LEN];
+
         /// <summary>
         /// Defines the sym_key_chan1.
         /// </summary>
@@ -101,6 +106,22 @@
             0x43, 0x82, 0xC5, 0xAC, 0x4C, 0xB9, 0x58, 0xC5,
             0x57, 0x0A, 0x4E, 0x30, 0xCC, 0xED, 0xFE, 0xF7,
             0x76, 0xF7, 0xC7, 0x75, 0x0C, 0x53, 0xA9, 0xE5,
+        };
+
+        readonly byte[] their_keypair_seed = new byte[]
+        {
+           1,  2,  3,  4,  5,  6,  7,  8,
+           9, 10, 11, 12, 13, 14, 15, 16,
+          17, 18, 19, 20, 21, 22, 23, 24,
+          25, 26, 27, 28, 29, 30, 31, 32,
+        };
+
+        readonly byte[] our_keypair_seed = new byte[]
+        {
+          32, 31, 30, 29, 28, 27, 26, 25,
+          24, 23, 22, 21, 20, 19, 18, 17,
+          16, 15, 14, 13, 12, 11, 10,  9,
+           8,  7,  6,  5,  4,  3,  2,  1,
         };
 
         /// <summary>
@@ -319,6 +340,10 @@
         {
             sym_key_chan1 = new Gec_sym_key();
             sym_key_chan2 = new Gec_sym_key();
+
+            generate(our_pubkey, our_privkey, our_keypair_seed);
+            generate(their_pubkey, their_privkey, their_keypair_seed);
+
             //Gec_raw_key raw_key1 = new Gec_raw_key(raw_key_1);
             //Gec_raw_key raw_key2 = new Gec_raw_key(raw_key_2);
             //try

@@ -254,9 +254,9 @@ namespace MissionPlanner.Comms
             rand.NextBytes(random_data);
 
             var ctx = new byte[GEC.GEC.GEC_CONTEXT_LEN];
-            var pubkey = new byte[GEC.GEC.GEC_PUBKEY_LEN];
-            var privkey = new byte[GEC.GEC.GEC_PRIVKEY_LEN];
-            var their_pubkey = new byte[GEC.GEC.GEC_PUBKEY_LEN];
+            var pubkey = gec.our_pubkey;
+            var privkey = gec.our_privkey;
+            var their_pubkey = gec.their_pubkey;
 
             var msg1 = new byte[GEC.GEC.MSG_1_LEN];
             var msg2 = new byte[GEC.GEC.MSG_2_LEN];
@@ -264,16 +264,6 @@ namespace MissionPlanner.Comms
 
             var key_material = new byte[GEC.GEC.KEY_MATERIAL_LEN];
 
-            GEC.GEC.generate(pubkey, privkey, random_data);
-
-            Console.WriteLine("Send our pubkey");
-            // Send pubkey
-            _baseport.Write(pubkey, 0, pubkey.Length);
-
-            Console.WriteLine("Wait their pubkey");
-            // Read pubkey
-            read_from_BasePort(their_pubkey, their_pubkey.Length);
-            Console.WriteLine("Got their pubkey");
 
             GEC.GEC.init_context(ctx, pubkey, privkey, their_pubkey);
 
