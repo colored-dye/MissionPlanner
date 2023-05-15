@@ -231,9 +231,11 @@ namespace MissionPlanner.Comms
         }
 
         static GEC.GEC gec = new GEC.GEC();
-        static bool key_ready = false;
+        static bool key_ready = true;
         System.Collections.Concurrent.ConcurrentQueue<byte> plaintext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
         System.Collections.Concurrent.ConcurrentQueue<byte> ciphertext_queue = new System.Collections.Concurrent.ConcurrentQueue<byte>();
+
+        object plaintext_queue_lock = new object();
 
         System.ComponentModel.BackgroundWorker bgw = null;
 
@@ -307,79 +309,91 @@ namespace MissionPlanner.Comms
         Int64 decrypt_cnt = 0;
         void WaitDecryptedData(int count)
         {
-            // Wait until `count` bytes of data are available
-            while (plaintext_queue.Count < count && _baseport.IsOpen)
+            lock (plaintext_queue_lock)
             {
-                var ct = new GEC.GEC.Gec_ciphertext();
-                var pt = new GEC.GEC.Gec_plaintext();
-
-                while (_baseport.IsOpen)
+                // Wait until `count` bytes of data are available
+                while (plaintext_queue.Count < count && _baseport.IsOpen)
                 {
-                    try
-                    {
-                        int c = _baseport.ReadByte();
-                        if ((byte)c == GEC.GEC.GEC_CT_FRAME_MAGIC)
-                        {
-                            c = -1;
-                            while (c == -1 && _baseport.IsOpen)
-                            {
-                                c = _baseport.ReadByte();
-                            }
+                    var ct = new GEC.GEC.Gec_ciphertext();
+                    var pt = new GEC.GEC.Gec_plaintext();
 
-                            if ((byte)c == GEC.GEC.GEC_CT_FRAME_TAG)
+                    while (_baseport.IsOpen)
+                    {
+                        try
+                        {
+                            int c = _baseport.ReadByte();
+                            if ((byte)c == GEC.GEC.GEC_CT_FRAME_MAGIC)
                             {
-                                break;
+                                c = -1;
+                                while (c == -1 && _baseport.IsOpen)
+                                {
+                                    c = _baseport.ReadByte();
+                                }
+
+                                if ((byte)c == GEC.GEC.GEC_CT_FRAME_TAG)
+                                {
+                                    break;
+                                }
                             }
                         }
+                        catch { }
+                        //catch (System.IO.IOException e)
+                        //{
+                        //    Console.WriteLine("IOException: {0}", e);
+                        //    return;
+                        //}
+                        //catch (System.TimeoutException e)
+                        //{
+                        //    Console.WriteLine("TimeoutException: {0}", e);
+                        //    return;
+                        //}
                     }
-                    catch { }
-                    //catch (System.IO.IOException e)
-                    //{
-                    //    Console.WriteLine("IOException: {0}", e);
-                    //    return;
-                    //}
-                    //catch (System.TimeoutException e)
-                    //{
-                    //    Console.WriteLine("TimeoutException: {0}", e);
-                    //    return;
-                    //}
-                }
 
-                int cnt = 0;
-                while (cnt < GEC.GEC.GEC_CT_LEN && _baseport.IsOpen)
-                {
-                    try
+                    int cnt = 0;
+                    while (cnt < GEC.GEC.GEC_CT_LEN && _baseport.IsOpen)
                     {
-                        int len = _baseport.Read(ct.byte_array, cnt, GEC.GEC.GEC_CT_LEN - cnt);
-                        cnt += len;
+                        try
+                        {
+                            int len = _baseport.Read(ct.byte_array, cnt, GEC.GEC.GEC_CT_LEN - cnt);
+                            cnt += len;
+                        }
+                        catch (System.IO.IOException e)
+                        {
+                            Console.WriteLine("IOException: {0}", e);
+                            return;
+                        }
+                        catch (System.TimeoutException e)
+                        {
+                            Console.WriteLine("TimeoutException: {0}", e);
+                            return;
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Exception: {0}", e);
+                            return;
+                        }
                     }
-                    catch { }
-                    //catch (System.IO.IOException e)
-                    //{
-                    //    Console.WriteLine("IOException: {0}", e);
-                    //    return;
-                    //}
-                    //catch (System.TimeoutException e)
-                    //{
-                    //    Console.WriteLine("TimeoutException: {0}", e);
-                    //    return;
-                    //}
-                }
 
-                var start = Stopwatch.GetTimestamp();
-                if (gec.decrypt(2, ct, pt) != GEC.GEC.GEC_RET.GEC_SUCCESS)
-                {
-                    Console.WriteLine("Decrypt failed");
-                    continue;
-                }
-                var end = Stopwatch.GetTimestamp();
-                decrypt_time += end - start;
-                decrypt_cnt++;
-                Console.WriteLine("Decrypt time: {0}", decrypt_time / ++decrypt_cnt);
+                    if (!_baseport.IsOpen)
+                    {
+                        return;
+                    }
 
-                foreach (var b in pt.byte_array)
-                {
-                    plaintext_queue.Enqueue(b);
+                    var start = Stopwatch.GetTimestamp();
+                    if (gec.decrypt(2, ct, pt) != GEC.GEC.GEC_RET.GEC_SUCCESS)
+                    {
+                        Console.WriteLine("Decrypt failed");
+                        continue;
+                    }
+                    var end = Stopwatch.GetTimestamp();
+                    decrypt_time += end - start;
+                    decrypt_cnt++;
+                    Console.WriteLine("Decrypt time: {0}", decrypt_time / ++decrypt_cnt);
+
+                    foreach (var b in pt.byte_array)
+                    {
+                        plaintext_queue.Enqueue(b);
+                    }
                 }
             }
         }
@@ -399,10 +413,13 @@ namespace MissionPlanner.Comms
             int local_count = 0;
             for (int i = 0; i < count;)
             {
-                if (plaintext_queue.TryDequeue(out buffer[offset + i]))
+                lock (plaintext_queue_lock)
                 {
-                    i++;
-                    local_count++;
+                    if (plaintext_queue.TryDequeue(out buffer[offset + i]))
+                    {
+                        i++;
+                        local_count++;
+                    }
                 }
             }
 

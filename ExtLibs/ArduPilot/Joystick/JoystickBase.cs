@@ -900,7 +900,18 @@ namespace MissionPlanner.Joystick
             // save for later
             int raw = working;
 
-            working = (int) Expo(working, expo, min, max, trim);
+            if (axis == joystickaxis.Y)
+            {
+                working = (int)Expo(working, expo, 1100, 1800, trim);
+            }
+            else if(axis == joystickaxis.X || axis == joystickaxis.Rx || axis == joystickaxis.Ry)
+            {
+                working = (int)Expo(working, expo, 1250, 1750, trim);
+            }
+            else
+            {
+                working = (int)Expo(working, expo, min, max, trim);
+            }
 
             //add limits to movement
             working = Math.Max(min, working);

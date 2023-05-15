@@ -666,7 +666,8 @@ namespace MissionPlanner
 
             try
             {
-                BaseStream.ReadBufferSize = 16 * 1024;
+                //BaseStream.ReadBufferSize = 16 * 1024;
+                BaseStream.ReadBufferSize = 16 * 4096;
 
                 lock (objlock) // so we dont have random traffic
                 {

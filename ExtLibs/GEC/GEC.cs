@@ -341,20 +341,20 @@
             sym_key_chan1 = new Gec_sym_key();
             sym_key_chan2 = new Gec_sym_key();
 
-            generate(our_pubkey, our_privkey, our_keypair_seed);
-            generate(their_pubkey, their_privkey, their_keypair_seed);
+            //generate(our_pubkey, our_privkey, our_keypair_seed);
+            //generate(their_pubkey, their_privkey, their_keypair_seed);
 
-            //Gec_raw_key raw_key1 = new Gec_raw_key(raw_key_1);
-            //Gec_raw_key raw_key2 = new Gec_raw_key(raw_key_2);
-            //try
-            //{
-            //    gec_init_sym_key_conf_auth(sym_key_chan1.byte_array, raw_key1.byte_array);
-            //    gec_init_sym_key_conf_auth(sym_key_chan2.byte_array, raw_key2.byte_array);
-            //}
-            //catch (Exception e)
-            //{
-            //    Console.WriteLine(e);
-            //}
+            Gec_raw_key raw_key1 = new Gec_raw_key(raw_key_1);
+            Gec_raw_key raw_key2 = new Gec_raw_key(raw_key_2);
+            try
+            {
+                gec_init_sym_key_conf_auth(sym_key_chan1.byte_array, raw_key1.byte_array);
+                gec_init_sym_key_conf_auth(sym_key_chan2.byte_array, raw_key2.byte_array);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
 
         public enum GEC_RET {
