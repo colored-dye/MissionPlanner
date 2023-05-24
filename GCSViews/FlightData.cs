@@ -392,7 +392,7 @@ namespace MissionPlanner.GCSViews
             }
 
             MainV2.comPort.ParamListChanged += FlightData_ParentChanged;
-
+            //hud1.bgimage = global::MissionPlanner.Properties.Resources.hud;
             //HUD Theming, color setup
             myhud.groundColor1 = ThemeManager.HudGroundTop;
             myhud.groundColor2 = ThemeManager.HudGroundBot;
@@ -6180,6 +6180,11 @@ namespace MissionPlanner.GCSViews
         {
             tabControlactions.Multiline = !tabControlactions.Multiline;
             Settings.Instance["tabControlactions_Multiline"] = tabControlactions.Multiline.ToString();
+        }
+
+        private void tabGauges_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

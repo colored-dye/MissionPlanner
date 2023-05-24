@@ -118,61 +118,61 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MenuSimulation.ToolTipText" xml:space="preserve">
-    <value>模拟</value>
+    <value />
   </data>
   <data name="MenuFlightPlanner.Text" xml:space="preserve">
-    <value>飞行计划</value>
+    <value />
   </data>
   <data name="MenuHelp.Text" xml:space="preserve">
-    <value>帮助</value>
+    <value />
   </data>
   <data name="MenuInitConfig.ToolTipText" xml:space="preserve">
-    <value>硬件配置</value>
+    <value />
   </data>
   <data name="$this.Text" xml:space="preserve">
-    <value>Mission Planner - By Michael Oborne</value>
+    <value>Flycube---by Xiang Yun</value>
   </data>
   <data name="MenuTerminal.Text" xml:space="preserve">
-    <value>终端</value>
+    <value />
   </data>
   <data name="MenuDonate.Text" xml:space="preserve">
-    <value>捐赠</value>
+    <value />
   </data>
   <data name="MenuFlightData.Text" xml:space="preserve">
-    <value>飞行数据</value>
+    <value />
   </data>
   <data name="MenuInitConfig.Text" xml:space="preserve">
-    <value>初始设置</value>
+    <value />
   </data>
   <data name="MenuConnect.Text" xml:space="preserve">
-    <value>连接</value>
+    <value />
   </data>
   <data name="MenuFlightPlanner.ToolTipText" xml:space="preserve">
-    <value>飞行计划器</value>
+    <value />
   </data>
   <data name="MenuConfigTune.Text" xml:space="preserve">
-    <value>配置/调试</value>
+    <value />
   </data>
   <data name="MenuFlightData.ToolTipText" xml:space="preserve">
-    <value>飞行数据</value>
+    <value />
   </data>
   <data name="MenuConfigTune.ToolTipText" xml:space="preserve">
-    <value>软件配置</value>
+    <value />
   </data>
   <data name="MenuSimulation.Text" xml:space="preserve">
-    <value>模拟</value>
+    <value />
   </data>
   <data name="MenuHelp.ToolTipText" xml:space="preserve">
-    <value>终端</value>
+    <value />
   </data>
   <data name="MainMenu.Text" xml:space="preserve">
     <value>menuStrip1</value>
   </data>
   <data name="MenuTerminal.ToolTipText" xml:space="preserve">
-    <value>终端</value>
+    <value />
   </data>
   <data name="menu.Text" xml:space="preserve">
-    <value>菜单</value>
+    <value />
   </data>
   <data name="autoHideToolStripMenuItem.Text" xml:space="preserve">
     <value>自动隐藏</value>

@@ -119,12 +119,13 @@ namespace MissionPlanner.Utilities
             {
                 switch (iconSet)
                 {
-                    case IconSet.BurnKermitIconSet:
-                        MainV2.instance.switchicons(new MainV2.burntkermitmenuicons());
-                        break;
                     case IconSet.HighContrastIconSet:
                         MainV2.instance.switchicons(new MainV2.highcontrastmenuicons());
                         break;
+                    case IconSet.BurnKermitIconSet:
+                        MainV2.instance.switchicons(new MainV2.burntkermitmenuicons());
+                        break;
+                
                     default:                                                            
                         MainV2.instance.switchicons(new MainV2.burntkermitmenuicons());     //Fall back to BurntKermit
                         break;
