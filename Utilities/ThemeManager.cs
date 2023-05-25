@@ -46,8 +46,9 @@ namespace MissionPlanner.Utilities
 
         public enum IconSet
         {
-            BurnKermitIconSet,
             HighContrastIconSet,
+           // BurnKermitIconSet,
+           
         }
 
         public String strThemeName { get; set; }
@@ -61,7 +62,7 @@ namespace MissionPlanner.Utilities
         }
         public void InitColors()
         {
-            iconSet = IconSet.BurnKermitIconSet;
+            iconSet = IconSet.HighContrastIconSet;
             terminalTheming = true;
             strThemeName = "BurntKermit.mpsystheme";
 
@@ -122,9 +123,9 @@ namespace MissionPlanner.Utilities
                     case IconSet.HighContrastIconSet:
                         MainV2.instance.switchicons(new MainV2.highcontrastmenuicons());
                         break;
-                    case IconSet.BurnKermitIconSet:
-                        MainV2.instance.switchicons(new MainV2.burntkermitmenuicons());
-                        break;
+                   // case IconSet.BurnKermitIconSet:
+                    //    MainV2.instance.switchicons(new MainV2.burntkermitmenuicons());
+                    //    break;
                 
                     default:                                                            
                         MainV2.instance.switchicons(new MainV2.burntkermitmenuicons());     //Fall back to BurntKermit

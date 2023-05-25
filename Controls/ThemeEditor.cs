@@ -140,7 +140,7 @@ namespace MissionPlanner.Controls
             }
             else
             {
-                ThemeManager.thmColor.iconSet = ThemeColorTable.IconSet.BurnKermitIconSet;
+                //ThemeManager.thmColor.iconSet = ThemeColorTable.IconSet.BurnKermitIconSet;
             }
         }
     }
